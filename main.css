@@ -1,0 +1,114 @@
+:root {
+    --nav-height: 40px;
+    --nav-bg-color: rgba(0, 0, 0, 0.1);
+    --nav-margin: 0px;
+    --nav-padding: 10px;
+
+
+    --text-color: white;
+    /*IF --nav-padding is less than 20 dont add it to the calculation*/
+    --content-height: calc(100vh - (var(--nav-height) + var(--nav-margin)));
+
+    --left-container-width: 200px;
+    --left-container-height: var(--content-height);
+    --left-container-bg-color: rgba(0, 0, 0, 0.1);
+
+    --editor-bg-color: rgba(0, 0, 0, 0.4);
+
+
+    --right-container-width: 200px;
+    --right-container-height: var(--content-height);
+    --right-container-bg-color: rgba(0, 0, 0, 0.1);
+
+    --inner-margin: 10px;
+    --inner-height: calc(100vh - (var(--inner-margin)*2) - var(--nav-height) - var(--nav-margin));
+    --inner-border-radius: 8px;
+    --inner-bg-color: rgba(0, 0, 0, 0.1);
+    --inner-closed-width: 50px
+}
+
+#page {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+}
+
+#nav {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    max-width: 100vw;
+    height: var(--nav-height);
+    background-color: var(--nav-bg-color);
+    padding: var(--nav-padding);
+    margin: var(--nav-margin);
+    max-height: var(--nav-height);
+}
+
+#content {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: normal;
+    align-items: normal;
+    align-content: normal;
+    width: 100%;
+    max-width: 100vw;
+    height: 100%;
+    color: var(--text-color);
+}
+
+#left {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: stretch;
+    border: 1px solid black;
+    position: absolute;
+    left: 0px;
+    height: var(--left-container-height);
+    background-color: var(--left-container-bg-color);
+}
+
+#editor {
+    display: flex;
+    margin: 0px;
+    width: 100%;
+    border: 1px solid black;
+    justify-content: center;
+    background-color: var(--editor-bg-color);
+}
+
+#right {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: stretch;
+    height: var(--right-container-height);
+    border: 1px solid black;
+    position: absolute;
+    right: 0px;
+    background-color: var(--right-container-bg-color);
+}
+
+#innerEditorCanvas {
+    max-height: var(--content-height);
+    pointer-events: all;
+}
+.inner {
+    pointer-events: all;
+    height: var(--inner-height);
+    margin: var(--inner-margin);
+    border-radius: var(--inner-border-radius);
+    background-color: var(--inner-bg-color);
+    max-width: calc(var(--left-container-width) - (var(--inner-margin) * 2));
+    width: calc(var(--left-container-width) - (var(--inner-margin) * 2));
+    overflow: hidden;
+    right: inherit;
+    left: inherit;
+}
+
+#innerEditorCanvas {
+    max-height: var(--content-height);
+}
