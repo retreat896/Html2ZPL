@@ -168,7 +168,50 @@
     </script>
 
     <script type="text/javascript">
-      $(document).ready(function () {});
+      $(document).ready(function () {
+    let target = null;
+    let isHandlerDragging = false;
+
+    $(document).on("mousedown", ".resize-bar-v", function (e) {
+        isHandlerDragging = true;
+        target = $(this).attr("data-krus-target");
+        e.preventDefault(); // Prevent default action
+    });
+
+    $(document).on("mousemove", function (e) {
+        if (!isHandlerDragging) {
+            return;
+        }
+
+        if (target) {
+            const minWidth = 200; // Minimum width of the target element
+            let offset // Get the target element's left offset
+            const pointerPosition = e.clientX;
+            let newWidth;
+            if(target=="#innerLeft"){
+              offset = $(target).offset().left;
+              newWidth = Math.max(minWidth, pointerPosition -offset);
+            }else if(target=="#innerRight"){
+              offset = document.getElementById(target.replace("#", "")).getBoundingClientRect().right;
+              newWidth = Math.max(minWidth, offset - pointerPosition)-25;
+            }else{
+              offset = $(target).offset().left;
+              
+            }
+             // Get the current pointer position
+           
+            // Resize the target element based on the pointer position
+             
+            $(target).css("width", newWidth + "px");
+        }
+    });
+
+    $(document).on("mouseup", function () {
+        isHandlerDragging = false;
+        target = null; // Clear the target when mouse is released
+    });
+});
+
     </script>
     <div id="page">
       <div id="nav">nav</div>
@@ -198,11 +241,11 @@
 
         <div id="right">
           <div data-krus-target="#innerRight" class="resize-bar-v"></div>
-            <button
-          class="btn bg-secondary text-white toggle"
-          data-bs-toggle="collapse"
-          data-bs-target="#innerRight"
-        ></button>
+          <button
+            class="btn bg-secondary text-white toggle"
+            data-bs-toggle="collapse"
+            data-bs-target="#innerRight"
+          ></button>
           <div id="innerRight" class="collapse-horizontal collapse">
             <div class="inner">
               <p>
@@ -212,7 +255,6 @@
             </div>
           </div>
         </div>
-        
       </div>
     </div>
   </body>
