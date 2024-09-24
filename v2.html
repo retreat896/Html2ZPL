@@ -47,6 +47,16 @@
           canvas.width = document.querySelector("#editor").clientWidth;
           canvas.height = document.querySelector("#editor").clientHeight - 10;
 
+          let dvdx = canvas.width / 2;
+          let dvdy = canvas.height / 2;
+          let dvddx = (Math.random() - 0.5) * 4; // Random initial velocity
+          let dvddy = (Math.random() - 0.5) * 4;
+          let dvdspeed = Math.min(5, Math.max(1, (Math.random()*10)));
+          console.log("dvdspeed", dvdspeed);
+          const dvdradius = 20;
+          const dvdcolors = ['red', 'green', 'blue', 'yellow', 'orange'];
+          let dvdcolorIndex = 0;
+
           var context = canvas.getContext("2d");
           canvas.addEventListener("mousewheel", zoom, false);
           canvas.addEventListener("mousedown", setMouseDown, false);
@@ -85,13 +95,33 @@
             false
           );
 
-          // Draw the canvas
+          //Draw the canvas
           function drawCanvas() {
             context.fillStyle = "#FFFFFF";
             context.fillRect(0, 0, canvas.width, canvas.height);
             if (loaded) {
               drawImage();
+              context.beginPath();
+            context.arc(dvdx, dvdy, dvdradius, 0, 2 * Math.PI);
+            context.fillStyle = dvdcolors[dvdcolorIndex];
+            context.fill();
+
+            // Update position
+            dvdx += dvddx*dvdspeed;
+            dvdy += dvddy*dvdspeed;
+
+            // Reverse direction if hitting the edges
+            if (dvdx + dvdradius > canvas.width || dvdx - dvdradius < 0) {
+              dvddx = -dvddx;
+              dvdcolorIndex = (dvdcolorIndex + 1) % dvdcolors.length;
             }
+            if (dvdy + dvdradius > canvas.height || dvdy - dvdradius < 0) {
+              dvddy = -dvddy;
+              dvdcolorIndex = (dvdcolorIndex + 1) % dvdcolors.length;
+            }
+            
+            }
+            
             requestAnimationFrame(drawCanvas);
           }
 
@@ -118,7 +148,7 @@
           function zoomIn(e) {
             if (scale < MAX_ZOOM) {
               scale += ZOOM_STEP;
-              drawCanvas();
+              //drawCanvas();
             }
           }
 
@@ -126,20 +156,20 @@
           function zoomOut(e) {
             if (scale > MIN_ZOOM) {
               scale -= ZOOM_STEP;
-              drawCanvas();
+              //drawCanvas();
             }
           }
 
           // Reset the zoom
           function resetZoom(e) {
             scale = DEFAULT_ZOOM;
-            drawCanvas();
+            //drawCanvas();
           }
 
           // Reset the position
           function resetPos(e) {
             drawPos = DRAW_POS;
-            drawCanvas();
+            //drawCanvas();
           }
 
           // Toggle mouse status
@@ -162,6 +192,7 @@
               drawCanvas();
             }
           }
+          
         },
         true
       );
@@ -169,49 +200,77 @@
 
     <script type="text/javascript">
       $(document).ready(function () {
-    let target = null;
-    let isHandlerDragging = false;
+        let target = null;
+        let isHandlerDragging = false;
 
-    $(document).on("mousedown", ".resize-bar-v", function (e) {
-        isHandlerDragging = true;
-        target = $(this).attr("data-krus-target");
-        e.preventDefault(); // Prevent default action
-    });
+        $(document).on("mousedown", ".resize-bar-v", function (e) {
+          isHandlerDragging = true;
+          target = $(this).attr("data-krus-target");
+          e.preventDefault(); // Prevent default action
+        });
 
-    $(document).on("mousemove", function (e) {
-        if (!isHandlerDragging) {
+        $(document).on("mousemove", function (e) {
+          if (!isHandlerDragging) {
             return;
-        }
+          }
 
-        if (target) {
+          if (target) {
+            let temptarget = target;
+            console.log(target);
+            if (target.split("|").length != 1) {
+              temptarget = target.split("|")[0];
+            }
             const minWidth = 200; // Minimum width of the target element
-            let offset // Get the target element's left offset
+            let offset; // Get the target element's left offset
             const pointerPosition = e.clientX;
             let newWidth;
-            if(target=="#innerLeft"){
-              offset = $(target).offset().left;
-              newWidth = Math.max(minWidth, pointerPosition -offset);
-            }else if(target=="#innerRight"){
-              offset = document.getElementById(target.replace("#", "")).getBoundingClientRect().right;
-              newWidth = Math.max(minWidth, offset - pointerPosition)-25;
-            }else{
-              offset = $(target).offset().left;
-              
+            if (temptarget == "#innerLeft") {
+              offset = $(temptarget).offset().left;
+              newWidth = Math.min(
+                500,
+                Math.max(minWidth, pointerPosition - offset)
+              );
+            } else if (temptarget == "#innerRight") {
+              offset = document
+                .getElementById(temptarget.replace("#", ""))
+                .getBoundingClientRect().right;
+              newWidth = Math.min(
+                500,
+                Math.max(minWidth, offset - pointerPosition) - 20
+              );
+            } else {
+              offset = $(temptarget).offset().left;
+              newWidth = Math.min(
+                500,
+                Math.max(minWidth, pointerPosition - offset)
+              );
             }
-             // Get the current pointer position
-           
+            // Get the current pointer position
+
             // Resize the target element based on the pointer position
-             
-            $(target).css("width", newWidth + "px");
-        }
-    });
+            if (target.split("|").length == 1) {
+              $(temptarget).css("width", newWidth + "px");
+            } else {
+              var bodyStyles = window.getComputedStyle(document.body);
+              var innermargin = bodyStyles.getPropertyValue("--inner-margin");
+              $(target.split("|")[0]).css("width", newWidth + "px");
+              $(target.split("|")[1]).css(
+                "width",
+                newWidth - innermargin.replace("px", "") * 2 + "px"
+              );
+              console.log(
+                "width",
+                newWidth - innermargin.replace("px", "") * 2 + "px"
+              );
+            }
+          }
+        });
 
-    $(document).on("mouseup", function () {
-        isHandlerDragging = false;
-        target = null; // Clear the target when mouse is released
-    });
-});
-
+        $(document).on("mouseup", function () {
+          isHandlerDragging = false;
+          target = null; // Clear the target when mouse is released
+        });
+      });
     </script>
     <div id="page">
       <div id="nav">nav</div>
@@ -233,14 +292,20 @@
             data-bs-toggle="collapse"
             data-bs-target="#innerLeft"
           ></button>
-          <div data-krus-target="#innerLeft" class="resize-bar-v"></div>
+          <div
+            data-krus-target="#innerLeft|#innerLeft .inner"
+            class="resize-bar-v"
+          ></div>
         </div>
         <div id="editor">
           <div id="innerEditor"><canvas id="innerEditorCanvas"></canvas></div>
         </div>
 
         <div id="right">
-          <div data-krus-target="#innerRight" class="resize-bar-v"></div>
+          <div
+            data-krus-target="#innerRight|#innerRight .inner"
+            class="resize-bar-v"
+          ></div>
           <button
             class="btn bg-secondary text-white toggle"
             data-bs-toggle="collapse"

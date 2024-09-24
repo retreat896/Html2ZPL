@@ -22,6 +22,7 @@
 
     --inner-margin: 10px;
     --inner-height: calc(100vh - (var(--inner-margin)*2) - var(--nav-height) - var(--nav-margin));
+    --inner-width: calc(100% - 2(var(--inner-margin)));
     --inner-border-radius: 8px;
     --inner-bg-color: rgba(0, 0, 0, 0.1);
     --inner-closed-width: 50px
@@ -102,12 +103,21 @@
     margin: var(--inner-margin);
     border-radius: var(--inner-border-radius);
     background-color: var(--inner-bg-color);
-    max-width: calc(var(--left-container-width) - (var(--inner-margin) * 2));
-    width: calc(var(--left-container-width) - (var(--inner-margin) * 2));
-    min-width: calc(var(--left-container-width) - (var(--inner-margin) * 2));
+    max-width: var( --inner-width);
+    width: 175px;
+    /* min-width: calc(var(--left-container-width) - (var(--inner-margin) * 2)); */
     overflow: hidden;
     right: inherit;
     left: inherit;
+    /* transition: width 0.5s ease-in-out; */
+}
+
+#innerRight{
+   
+}
+
+#innerLeft {
+    
 }
 
 #innerEditorCanvas {
