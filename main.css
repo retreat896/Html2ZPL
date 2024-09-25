@@ -13,7 +13,7 @@
     --left-container-height: var(--content-height);
     --left-container-bg-color: rgba(0, 0, 0, 0.1);
 
-    --editor-bg-color: rgba(0, 0, 0, 0.4);
+    --editor-bg-color: rgba(0, 0, 0, 0);
 
 
     --right-container-width: 200px;
