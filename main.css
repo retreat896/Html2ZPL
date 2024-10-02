@@ -70,6 +70,7 @@
     left: 0px;
     height: var(--left-container-height);
     background-color: var(--left-container-bg-color);
+    z-index: 1;
 }
 
 #editor {
@@ -79,6 +80,7 @@
     border: 1px solid black;
     justify-content: center;
     background-color: var(--editor-bg-color);
+    
 }
 
 #right {
@@ -91,10 +93,17 @@
     position: absolute;
     right: 0px;
     background-color: var(--right-container-bg-color);
+    z-index: 1;
+}
+#innerEditor{
+    max-height: var(--content-height);
+    height: 100%;
+    width: 100%;
+    
 }
 
 #innerEditorCanvas {
-    max-height: var(--content-height);
+    height: 100%;
     pointer-events: all;
 }
 .inner {

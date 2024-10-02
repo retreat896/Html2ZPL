@@ -38,9 +38,9 @@
   <body>
     <script>
       $(document).ready(function () {
-        var container = document.getElementById("innerEditorCanvas");
-        var width = container.innerWidth;
-        var height = container.innerHeight;
+        var container = document.querySelector("#innerEditor");
+        var width = container.offsetWidth;
+        var height = container.offsetHeight;
         console.log(width, height);
 
         var stage = new Konva.Stage({
