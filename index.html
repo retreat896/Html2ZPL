@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>V2 Testing</title>
-
+    <title>ZPL Editor</title>
+    <link rel="icon" type="image/x-icon" href="favicon.svg" />
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -12,9 +12,12 @@
       crossorigin="anonymous"
     />
 
-    <meta name="description" content="" />
-    <meta name="author" content="html blank" />
-    <meta name="generator" content="Plain html plus a bit of bootstrap" />
+    <meta
+      name="description"
+      content="An html and javascript based ZPL editor"
+    />
+    <meta name="author" content="Adams, Krisopher" />
+    <meta name="generator" content="Creating a ZPL editor with Konva" />
 
     <script
       src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
@@ -37,6 +40,12 @@
 
   <body>
     <script>
+      //Globals
+      var scaleBy = 1.1;
+
+
+
+      async function createElement(config, defaults) {}
       $(document).ready(function () {
         var container = document.querySelector("#innerEditor");
         var width = container.offsetWidth;
@@ -47,6 +56,7 @@
           container: "#innerEditorCanvas",
           width: width,
           height: height,
+          draggable: true,
         });
 
         var layer = new Konva.Layer();
@@ -61,8 +71,53 @@
           width: 200,
         });
 
-        layer.add(textNode);
+        function createLabel(config) {
+          return new Konva.Rect({
+            x: width * Math.random(),
+            y: height * Math.random(),
+            width: 100,
+            height: 100,
+            fill: "red",
+            stroke: "black",
+          });
+        }
 
+        
+        stage.on("wheel", (e) => {
+          // stop default scrolling
+          e.evt.preventDefault();
+
+          var oldScale = stage.scaleX();
+          var pointer = stage.getPointerPosition();
+
+          var mousePointTo = {
+            x: (pointer.x - stage.x()) / oldScale,
+            y: (pointer.y - stage.y()) / oldScale,
+          };
+
+          // how to scale? Zoom in? Or zoom out?
+          let direction = e.evt.deltaY > 0 ? -1 : 1;
+
+          // when we zoom on trackpad, e.evt.ctrlKey is true
+          // in that case lets revert direction
+          if (e.evt.ctrlKey) {
+            direction = -direction;
+          }
+
+          var newScale =
+            direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+
+          stage.scale({ x: newScale, y: newScale });
+
+          var newPos = {
+            x: pointer.x - mousePointTo.x * newScale,
+            y: pointer.y - mousePointTo.y * newScale,
+          };
+          stage.position(newPos);
+        });
+
+        layer.add(textNode);
+        layer.add(createLabel());
         var tr = new Konva.Transformer({
           node: textNode,
           enabledAnchors: ["middle-left", "middle-right"],
