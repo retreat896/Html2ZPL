@@ -7,7 +7,7 @@ This is the second version of the ZPL GUI Editor. This version is a complete rew
 # TODO
 ## Editor Features
 - [ ] Add Labels to the editor
-  - [ ] Implement label rendering #397e078
+  - [ ] Implement label rendering
   - [ ] Handle label selection and focus
 - [ ] Edit Label Properties
   - [ ] Edit Label Sizes
