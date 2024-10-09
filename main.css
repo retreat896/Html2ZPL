@@ -159,3 +159,19 @@
     border-bottom: 1px solid #a9a9a9;
     background: linear-gradient(#a9a9a9, #a9a9a9) 0 2px/100% 1px  no-repeat;
   }
+
+
+
+  /* Individual styles */
+
+  #navGitIcon{
+    width: 35px;
+    height: 30px;
+    padding-left: 5px;
+  }
+  #navGitLink{
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    line-height: 0%;
+  }
