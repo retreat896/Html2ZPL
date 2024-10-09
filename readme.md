@@ -4,66 +4,67 @@
 
 This is the second version of the ZPL GUI Editor. This version is a complete rewrite of the original ZPL GUI Editor.
 
-# TODO
 ## Editor Features
-- [ ] Add Labels to the editor
-  - [ ] Implement label rendering
-  - [ ] Handle label selection and focus
-- [ ] Edit Label Properties
-  - [ ] Edit Label Sizes
-  - [ ] Edit Label Positions
-  - [ ] Edit Label Options
-- [ ] Show Label Preview
-  - [ ] Implement preview rendering
-  - [ ] Update preview on label changes
-- [ ] Change when label is previewed
-  - [ ] Implement preview toggle
-  - [ ] Allow on save and on change.
+- [ ] [Add Labels to the editor](https://github.com/retreat896/Html2ZPL/issues/3)
+  - [ ] [Implement label rendering](https://github.com/retreat896/Html2ZPL/issues/4)
+  - [ ] [Handle label selection and focus](https://github.com/retreat896/Html2ZPL/issues/5)
+- [ ] [Edit Label Properties](https://github.com/retreat896/Html2ZPL/issues/6)
+  - [ ] [Edit Label Sizes](https://github.com/retreat896/Html2ZPL/issues/7)
+  - [ ] [Edit Label Positions](https://github.com/retreat896/Html2ZPL/issues/8)
+  - [ ] [Edit Label Options](https://github.com/retreat896/Html2ZPL/issues/9)
+- [ ] [Show Label Preview](https://github.com/retreat896/Html2ZPL/issues/10)
+  - [ ] [Implement preview rendering](https://github.com/retreat896/Html2ZPL/issues/11)
+  - [ ] [Update preview on label changes](https://github.com/retreat896/Html2ZPL/issues/12)
+- [ ] [Change when label is previewed](https://github.com/retreat896/Html2ZPL/issues/13)
+  - [ ] [Implement preview toggle](https://github.com/retreat896/Html2ZPL/issues/14)
+  - [ ] [Allow on save and on change](https://github.com/retreat896/Html2ZPL/issues/15)
 
 ## Item Management
-- [ ] Dynamic item creation
-- [ ] Multiple items
-  - [ ] Implement item list rendering
-  - [ ] Handle item selection and focus
-- [ ] Add and remove items
-  - [ ] Implement item addition
-  - [ ] Implement item removal
-  - [ ] Handle item deletion confirmation
+- [ ] [Dynamic item creation](https://github.com/retreat896/Html2ZPL/issues/16)
+- [ ] [Multiple items](https://github.com/retreat896/Html2ZPL/issues/17)
+  - [ ] [Implement item list rendering](https://github.com/retreat896/Html2ZPL/issues/18)
+  - [ ] [Handle item selection and focus](https://github.com/retreat896/Html2ZPL/issues/19)
+- [ ] [Add and remove items](https://github.com/retreat896/Html2ZPL/issues/20)
+  - [ ] [Implement item addition](https://github.com/retreat896/Html2ZPL/issues/21)
+  - [ ] [Implement item removal](https://github.com/retreat896/Html2ZPL/issues/22)
+  - [ ] [Handle item deletion confirmation](https://github.com/retreat896/Html2ZPL/issues/23)
 
 ## Import/Export
-- [ ] Import zpl labels from file
-  - [ ] Implement file upload handling
-  - [ ] Parse zpl file format
-- [ ] Export zpl labels to different types of files
-  - [ ] Implement file export handling
-  - [ ] Support multiple file formats (e.g. PDF, PNG, etc.)
+- [ ] [Import zpl labels from file](https://github.com/retreat896/Html2ZPL/issues/24)
+  - [ ] [Implement file upload handling](https://github.com/retreat896/Html2ZPL/issues/25)
+  - [ ] [Parse zpl file format](https://github.com/retreat896/Html2ZPL/issues/26)
+- [ ] [Export zpl labels to different types of files](https://github.com/retreat896/Html2ZPL/issues/27)
+  - [ ] [Implement file export handling](https://github.com/retreat896/Html2ZPL/issues/28)
+  - [ ] [Support multiple file formats (e.g. PDF, PNG, etc.)](https://github.com/retreat896/Html2ZPL/issues/29)
 
 ## Item Options
-- [ ] Item options
-  - [ ] Implement option rendering
-  - [ ] Handle option changes
+- [ ] [Item options](https://github.com/retreat896/Html2ZPL/issues/30)
+  - [ ] [Implement option rendering](https://github.com/retreat896/Html2ZPL/issues/31)
+  - [ ] [Handle option changes](https://github.com/retreat896/Html2ZPL/issues/32)
 
 ## ZPL Elements
-- [ ] ZPL images
-  - [ ] Implement image rendering
-  - [ ] Handle image uploads
-- [ ] ZPL barcodes
-  - [ ] Implement barcode rendering
-  - [ ] Handle barcode data input
-- [ ] ZPL text
-  - [ ] Implement text rendering
-  - [ ] Handle text input
-- [ ] ZPL options
-  - [ ] Implement option rendering
-  - [ ] Handle option changes
+- [ ] [ZPL images](https://github.com/retreat896/Html2ZPL/issues/33)
+  - [ ] [Implement image rendering](https://github.com/retreat896/Html2ZPL/issues/34)
+  - [ ] [Handle image uploads](https://github.com/retreat896/Html2ZPL/issues/35)
+- [ ] [ZPL barcodes](https://github.com/retreat896/Html2ZPL/issues/36)
+  - [ ] [Implement barcode rendering](https://github.com/retreat896/Html2ZPL/issues/37)
+  - [ ] [Handle barcode data input](https://github.com/retreat896/Html2ZPL/issues/38)
+- [ ] [ZPL text](https://github.com/retreat896/Html2ZPL/issues/39)
+  - [ ] [Implement text rendering](https://github.com/retreat896/Html2ZPL/issues/40)
+  - [ ] [Handle text input](https://github.com/retreat896/Html2ZPL/issues/41)
+- [ ] [ZPL options](https://github.com/retreat896/Html2ZPL/issues/42)
+  - [ ] [Implement option rendering](https://github.com/retreat896/Html2ZPL/issues/43)
+  - [ ] [Handle option changes](https://github.com/retreat896/Html2ZPL/issues/44)
 
 ## Saving and Loading
-- [ ] Cloud saving and loading
-  - [ ] Implement cloud storage integration
-  - [ ] Handle cloud save and load operations
-- [ ] Local save and load
-  - [ ] Implement local storage handling
-  - [ ] Handle local save and load operations
+- [ ] [Cloud saving and loading](https://github.com/retreat896/Html2ZPL/issues/50)
+  - [ ] [Implement cloud storage integration](https://github.com/retreat896/Html2ZPL/issues/45)
+  - [ ] [Handle cloud save and load operations](https://github.com/retreat896/Html2ZPL/issues/46)
+- [ ] [Local save and load](https://github.com/retreat896/Html2ZPL/issues/47)
+  - [ ] [Implement local storage handling](https://github.com/retreat896/Html2ZPL/issues/48)
+  - [ ] [Handle local save and load operations](https://github.com/retreat896/Html2ZPL/issues/49)
+
+
 
 
 ## What is this?
