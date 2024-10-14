@@ -50,6 +50,7 @@
         strokeWidth: 1,
       }
       var LabelCount = 0;
+      
       $(document).ready(function () {
         var container = document.querySelector("#innerEditor");
         var width = container.offsetWidth;
@@ -63,7 +64,10 @@
           draggable: true,
         });
 
-        function createLabel(config) {
+        function createLabel(config,useGlobalConfig) {
+          if(useGlobalConfig){
+            config = {...userLabelConfig, ...config};
+          }
           LabelCount++;
           return new Konva.Rect({
             x: config.x?config.x:width * Math.random(),
@@ -72,7 +76,7 @@
             height: config.height?config.height:100,
             fill: config.color?config.color:"red",
             stroke: config.stroke?config.stroke:"black",
-            draggable: true,
+            draggable: false,
             id: 'Label'+LabelCount,
           });
         }
@@ -85,6 +89,7 @@
           let x = 0;
           
           var tempConfig = {...userLabelConfig,};
+          
           backgroundLayer.add(
             createLabel()
           );
@@ -326,7 +331,7 @@
             <div class="inner">
               <p>
                 Zoom:
-                <button type="button" id="zoomIn">Zoom In (+)</button>
+                <button type="button" id="createNewLabel" onclick=""> New Label</button>
                 <button type="button" id="zoomOut">Zoom Out (-)</button>
                 <button type="button" id="resetZoom">Reset Zoom</button>
               </p>
