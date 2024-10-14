@@ -40,9 +40,22 @@
 
   <body>
     <script>
+      var container;
+      var width;
+      var height;
+      let labelMap;
+      var backgroundLayer;
+      var imageLayer;
+      var textLayer;
+      var layer1;
+      var layer2;
+
+      var stage;
       //Globals
       var scaleBy = 1.1;
       var userLabelConfig = {
+        x: 0,
+        y: 0,
         width: 400,
         height: 600,
         fill: "lightgrey",
@@ -50,7 +63,54 @@
         strokeWidth: 1,
       };
       var LabelCount = 0;
-      
+
+      //functions
+      function createLabel(config, useGlobalConfig) {
+        if (useGlobalConfig) {
+          config = { ...userLabelConfig, ...config };
+        }
+        LabelCount++;
+        labelMap.set("Label" + LabelCount, config);
+        return new Konva.Rect({
+          x: config.x ?? width * Math.random(),
+          y: config.y ?? height * Math.random(),
+          width: config.width ?? 100,
+          height: config.height ?? 100,
+          fill: config.color ?? "red",
+          stroke: config.stroke ?? "black",
+          draggable: false,
+          id: "Label" + LabelCount,
+        });
+      }
+
+      var labelsPerRow = 2;
+      var padding = 10;
+
+      function addLabel() {
+        let lastLabel = labelMap.get("Label" + LabelCount);
+        if (lastLabel) {
+          if (LabelCount % labelsPerRow == 0) {
+            userLabelConfig.x = 0;
+            userLabelConfig.y =
+              Math.floor(LabelCount / labelsPerRow) * lastLabel.height +
+              padding;
+          } else {
+            userLabelConfig.x = lastLabel.x + lastLabel.width + 10 ;
+          }
+        }
+        let x = userLabelConfig.x;
+        let y = userLabelConfig.y;
+        if (!lastLabel) {
+          console.log(x, " : ", y);
+        } else {
+          console.log(LabelCount % labelsPerRow," - ", lastLabel.x + " : ", x, "  ", lastLabel.y + " : ", y);
+        }
+
+        var tempConfig = { ...userLabelConfig };
+        backgroundLayer.add(createLabel({}, true));
+      }
+
+      function removeLabel(config) {}
 
       //width sliders
       $(document).ready(function () {
@@ -128,10 +188,10 @@
 
       //konva
       $(document).ready(function () {
-        var container = document.querySelector("#innerEditor");
-        var width = container.offsetWidth;
-        var height = container.offsetHeight;
-        let labelMap = new Map();
+        container = document.querySelector("#innerEditor");
+        width = container.offsetWidth;
+        height = container.offsetHeight;
+        labelMap = new Map();
         console.log(width, height);
 
         var stage = new Konva.Stage({
@@ -141,52 +201,11 @@
           draggable: true,
         });
 
-        function createLabel(config,useGlobalConfig) {
-          if(useGlobalConfig){
-            config = {...userLabelConfig, ...config};
-          }
-          LabelCount++;
-          labelMap.set("Label" + LabelCount, config);
-          return new Konva.Rect({
-            x: config.x?config.x:width * Math.random(),
-            y: config.y?config.y:height * Math.random(),
-            width: config.width?config.width:100,
-            height: config.height?config.height:100,
-            fill: config.color?config.color:"red",
-            stroke: config.stroke?config.stroke:"black",
-            draggable: false,
-            id: 'Label'+LabelCount,
-          });
-        }
-
-        function addLabel(userLabelConfig) {
-          //if label count is remainder 0 then x is 10
-          //if label count is remainder 1 then x is first label width + 10
-          //if label count is remainder 2 then x is first label width + second label Width + 10
-          let lastLabel = labelMap.get("Label" + (LabelCount));
-          if (lastLabel) {
-            if (LabelCount % 2 == 0) {
-              userLabelConfig.x = 10;
-            } else {
-              userLabelConfig.x = lastLabel.x() + lastLabel.width() + 10;
-            }
-            if (Math.floor(LabelCount / 2)) {
-              userLabelConfig.y =  Math.floor(LabelCount / 2) * lastLabel.height()
-            }
-          }
-          let x = userLabelConfig.x;
-          let y = userLabelConfig.y;
-          var tempConfig = { ...userLabelConfig };
-          backgroundLayer.add(createLabel());
-        }
-
-        function removeLabel(config) {}
-
-        var backgroundLayer = new Konva.Layer();
-        var imageLayer = new Konva.Layer();
-        var textLayer = new Konva.Layer();
-        var layer1 = new Konva.Layer();
-        var layer2 = new Konva.Layer();
+        backgroundLayer = new Konva.Layer();
+        imageLayer = new Konva.Layer();
+        textLayer = new Konva.Layer();
+        layer1 = new Konva.Layer();
+        layer2 = new Konva.Layer();
         stage.add(backgroundLayer);
         stage.add(imageLayer);
         stage.add(textLayer);
@@ -413,7 +432,9 @@
             <div class="inner">
               <p>
                 Zoom:
-                <button type="button" id="createNewLabel" onclick=""> New Label</button>
+                <button type="button" id="createNewLabel" onclick="addLabel()">
+                  New Label
+                </button>
                 <button type="button" id="zoomOut">Zoom Out (-)</button>
                 <button type="button" id="resetZoom">Reset Zoom</button>
               </p>
