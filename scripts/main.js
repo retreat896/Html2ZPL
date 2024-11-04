@@ -11,6 +11,7 @@ var layer2;
 var stage;
 //Globals
 var scaleBy = 1.1;
+//default Label Settings
 var userLabelConfig = {
   x: 0,
   y: 0,
@@ -21,6 +22,16 @@ var userLabelConfig = {
   strokeWidth: 1,
   labelsPerRow: 5,
   padding: 10,
+  labelCount: 0,
+  labelSize: 20,
+  labelSpacing: 10,
+  labelBorderWidth: 1,
+  labelBorderColor: "black",
+  labelBorderStyle: "solid",
+  labelBorderRadius: 0,
+  labelBackgroundColor: "white",
+
+  zoomSensitivity: 1.1,
 };
 var LabelCount = 0;
 
@@ -72,9 +83,22 @@ function removeLabel(config) { }
 //width sliders
 $(document).ready(function () {
   //set default label sttings
-  $("#labelSize").val(userLabelConfig.labelSize);
-  $("#labelWidth").val(userLabelConfig.width);
-  $("#labelHeight").val(userLabelConfig.height);
+  $("#labelSize").val(userLabelConfig.labelSize); //default label size
+  // CUstom label Size
+  $("#labelWidth").val(userLabelConfig.width);    //default label width
+  $("#labelHeight").val(userLabelConfig.height);  //default label height
+  
+  $("#labelSpacing").val(userLabelConfig.spacing); //default label spacing
+  //Label Border Settings
+  $("#labelBorderWidth").val(userLabelConfig.strokeWidth); //default label border width
+  $("#labelBorderColor").val(userLabelConfig.stroke); //default label border color
+  $("#labelBackgroundColor").val(userLabelConfig.fill); //default label background color
+  $("#labelBorderStyle").val(userLabelConfig.strokeStyle); //default label border style
+  $("#labelBorderRadius").val(userLabelConfig.borderRadius); //default label border radius
+
+  $("#labelsPerRow").val(userLabelConfig.labelsPerRow); //default labels per row
+
+
 
   let target = null;
   let isHandlerDragging = false;
@@ -276,7 +300,7 @@ $(document).ready(function () {
     }
 
     var newScale =
-      direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+      direction > 0 ? oldScale * userLabelConfig.zoomSensitivity : oldScale / scaleBy;
 
     stage.scale({ x: newScale, y: newScale });
 
