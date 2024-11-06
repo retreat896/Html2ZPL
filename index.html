@@ -81,11 +81,12 @@
                 </div>
 
                 <!-- label spacing -->
-                <div>
+                <div class=" rounded">
+                  <span>Label Spacing</span>
                   <input type="range" class="form-range" min="0" max="50" step="5" id="labelSpacing" value="10" oninput="$('#labelSpacingValue').val(this.value)" />
                   <div class="form-floating">
-                    <input type="number" class="form-control" id="labelSpacingValue" placeholder="10" value="10" />
-                    <label for="labelSpacing" class="form-label">Label Spacing</label>
+                    <input type="number" class="form-control form-floating" id="labelSpacingValue" placeholder="10" value="10" />
+                    <label for="labelSpacingValue" class="form-label">Label Spacing</label>
                   </div>
                 </div>
                 <!-- label Border Settings ( Strictly For Editor ) -->
@@ -140,7 +141,7 @@
                 <div class="input-group">
                   <div class="form-floating input-group-text">
                     <input type="range" class="form-range" min="0" max="2" step="0.1" id="editorMaxZoom" oninput="$('#editorMaxZoomValue').val(this.value)" />
-                    <label for="editorMaxZoom" class="form-label">Max Zoom</label>  
+                    <label for="editorMaxZoom" class="form-label">Max Zoom</label>
                   </div>
                   <input type="number" class="form-control" id="editorMaxZoomValue" oninput="$('#editorMaxZoom').val(this.value)" />
                 </div>
