@@ -3,19 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ZPL Editor</title>
-    <link rel="icon" type="image/x-icon" href="./images/favicon.svg" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous" />
-
     <meta name="description" content="An html and javascript based ZPL editor" />
     <meta name="author" content="Adams, Krisopher" />
     <meta name="generator" content="Creating a ZPL editor with Konva" />
 
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.1/dist/jquery.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
-    <script src="./scripts/konva.js" type="module"></script>
+    <title>ZPL Editor</title>
+
+    <link rel="icon" type="image/x-icon" href="./images/favicon.svg" />
+    <link href="./CSS/bootstrap.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous" />
     <link rel="stylesheet" href="./CSS/main.css" />
+    <!-- Popper v2.11.8 -->
+    <script src="./scripts/popper.js"></script>
+    <!-- Bootstrap v5.3.3 -->
+    <script src="./scripts/bootstrap.bundle.js"></script>
+    <!-- jQuery v3.7.1 -->
+    <script src="./scripts/jquery.js"></script>
+    <!-- Konva v9.3.15 -->
+    <script src="./scripts/konva.js" type="module"></script>
+    <!-- InteractJS v1.10.27 -->
+    <script src="./scripts/interact.js" type="module"></script>
   </head>
 
   <body>
@@ -81,7 +87,7 @@
                 </div>
 
                 <!-- label spacing -->
-                <div class=" rounded">
+                <div class="rounded">
                   <span>Label Spacing</span>
                   <input type="range" class="form-range" min="0" max="50" step="5" id="labelSpacing" value="10" oninput="$('#labelSpacingValue').val(this.value)" />
                   <div class="form-floating">
@@ -124,6 +130,7 @@
                 <label for="labelsPerRow" class="form-label">Labels per row</label>
                 <input type="range" class="form-range" min="1" max="10" step="1" id="labelsPerRow" />
               </div>
+
               <!-- /* Editor Settings */ -->
               <div id="editorSettings">
                 <h4>Editor Settings</h4>
@@ -144,6 +151,15 @@
                     <label for="editorMaxZoom" class="form-label">Max Zoom</label>
                   </div>
                   <input type="number" class="form-control" id="editorMaxZoomValue" oninput="$('#editorMaxZoom').val(this.value)" />
+                </div>
+              </div>
+
+              <!-- Item Selection -->
+              <div>
+                <h4>Add new item.</h4>
+                <p>drag and drop. double click to add.</p>
+                <div id="itemContainer">
+                  <div></div>
                 </div>
               </div>
             </div>
