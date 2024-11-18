@@ -36,7 +36,7 @@ let LabelCount = 0;
 function createLabel(positionalData) {
     LabelCount++;
     labelMap.set('Label' + LabelCount, config);
-    return new Konva.Rect({
+    let label = new Konva.Rect({
         x: positionalData.x ?? userLabelConfig.x,
         y: positionalData.y ?? userLabelConfig.y,
         width: userLabelConfig.width,
@@ -47,6 +47,31 @@ function createLabel(positionalData) {
         id: 'Label' + LabelCount,
         class: 'Label',
     });
+
+    label.on('dblclick dbltap', () => {
+        var labelPosition = label.getAbsolutePosition();
+        var stageBox = stage.container().getBoundingClientRect();
+        var areaPosition = {
+            x: stageBox.left + labelPosition.x,
+            y: stageBox.top + labelPosition.y
+        };
+        var innerKonvacanvas = document.createElement('canvas');
+        document.body.appendChild(innerKonvacanvas);
+
+        innerKonvacanvas.style.position = 'absolute';
+        innerKonvacanvas.style.top = areaPosition.y + 'px';
+        innerKonvacanvas.style.left = areaPosition.x + 'px';
+        innerKonvacanvas.style.width = userLabelConfig.width + 'px';
+        innerKonvacanvas.style.height = userLabelConfig.height + 'px';
+
+        innerKonvacanvas.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                innerKonvacanvas.remove();
+            }
+        });
+        
+    });
+    return label;
 }
 
 function addLabel() {
