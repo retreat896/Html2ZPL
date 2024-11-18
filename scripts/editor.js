@@ -10,6 +10,25 @@
   * [ ] [Handle item deletion confirmation](https://github.com/retreat896/Html2ZPL/issues/23)
  */
 
+//item on dblClick bdltap
+$(function () {
+    $(".addItem").on("click", function () {
+    console.log("[Editor.js - addItem()] : Adding Item");
+    addItem({type: "1dBarcode", subtype: "code128", x: 0, y: 0, width: 0, height: 0, text: "0123456789"});
+});
+})
+
+
+function addItem(config){
+    if(!config) {
+        console.error('[Editor.js - addItem()] : No Object Config provided');
+        return;
+    }
+    let label = document.getElementsByClassName("innerKonvacanvas")[0]
+    let item1 = new item(config);
+    label.getLayer("items").add(item1);
+}
+
 class label {
 
 }
@@ -23,18 +42,14 @@ class item {
         }
         
         this.config = config;
-        this.type = itemTypes.getItemType(this.config.type);
+        this.type = this.config.type;
         this.x = this.config.x;
         this.y = this.config.y;
         this.width = this.config.width;
         this.height = this.config.height;
         try {
-            this.Object = new Konva[type]({
-                x: this.x,
-                y: this.y,
-                width: this.width,
-                height: this.height,
-            });
+            this.Object = itemTypes.getItem(type,subtype);
+            return this.Object;
         } catch (e) {
             console.error("[Editor.js - item.constructor()] : " + e);
         }
@@ -81,7 +96,7 @@ class item {
 
 class itemTypes {
 
-    static getItemType(type) {
+    static getItem(type,subtype,config) {
         switch (type) {
             case "1dBarcode":
                 switch (subtype) {
@@ -114,6 +129,13 @@ class itemTypes {
                         break;
                     case "code128":
                         console.log("Code 128 Bar Code.");
+                        let test = new Konva.Text({
+                            x: config.x,
+                            y: config.y,
+                            width: config.width,
+                            height: config.height,
+                            text: config.text,
+                        })
                         break;
                     case "industrial2of5":
                         console.log("Industrial 2 of 5 Bar Code.");

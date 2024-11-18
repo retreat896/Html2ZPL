@@ -35,7 +35,6 @@ let LabelCount = 0;
 //functions
 function createLabel(positionalData) {
     LabelCount++;
-    labelMap.set('Label' + LabelCount, config);
     let label = new Konva.Rect({
         x: positionalData.x ?? userLabelConfig.x,
         y: positionalData.y ?? userLabelConfig.y,
@@ -49,28 +48,43 @@ function createLabel(positionalData) {
     });
 
     label.on('dblclick dbltap', () => {
+        console.log("[main.js - createLabel()] : Label Double Clicked");
         var labelPosition = label.getAbsolutePosition();
         var stageBox = stage.container().getBoundingClientRect();
         var areaPosition = {
             x: stageBox.left + labelPosition.x,
             y: stageBox.top + labelPosition.y
         };
-        var innerKonvacanvas = document.createElement('canvas');
-        document.body.appendChild(innerKonvacanvas);
+        var innerKonvaCanvas = document.createElement('canvas');
+        innerKonvaCanvas.classList.add('innerKonvaCanvas');
+        document.body.appendChild(innerKonvaCanvas);
+        let innerKonvaStage = new Konva.Stage({
+            container: innerKonvaCanvas,
+            width: userLabelConfig.width,
+            height: userLabelConfig.height
+        });
+        let backgroundLayer = new Konva.Layer();
+        let items = new Konva.Layer();
+        innerKonvaStage.add(backgroundLayer);
+        innerKonvaStage.add(items);
+        
 
-        innerKonvacanvas.style.position = 'absolute';
-        innerKonvacanvas.style.top = areaPosition.y + 'px';
-        innerKonvacanvas.style.left = areaPosition.x + 'px';
-        innerKonvacanvas.style.width = userLabelConfig.width + 'px';
-        innerKonvacanvas.style.height = userLabelConfig.height + 'px';
+        
 
-        innerKonvacanvas.addEventListener('keypress', (e) => {
+        innerKonvaCanvas.style.position = 'absolute';
+        innerKonvaCanvas.style.top = areaPosition.y + 'px';
+        innerKonvaCanvas.style.left = areaPosition.x + 'px';
+        innerKonvaCanvas.style.width = userLabelConfig.width + 'px';
+        innerKonvaCanvas.style.height = userLabelConfig.height + 'px';
+
+        innerKonvaCanvas.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                innerKonvacanvas.remove();
+                innerKonvaCanvas.remove();
             }
         });
-        
+        console.log("[main.js - createLabel()] : Label canvas created");
     });
+    
     return label;
 }
 
@@ -104,7 +118,7 @@ function removeLabel(config) {
 }
 
 //width sliders
-$(document).ready(function () {
+$(function () {
     $('#labelSize').val(userLabelConfig.labelSize);
 
     // Custom Label Size
@@ -240,13 +254,13 @@ $(document).ready(function () {
 });
 
 //konva
-$(document).ready(function () {
+$(function () {
     container = document.querySelector('#innerEditor');
     width = container.offsetWidth;
     height = container.offsetHeight;
     console.log(width, height);
 
-    let stage = new Konva.Stage({
+    stage = new Konva.Stage({
         container: '#innerEditorCanvas',
         width: width,
         height: height,
