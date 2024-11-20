@@ -49,44 +49,36 @@ function createLabel(positionalData) {
 
     label.on('dblclick dbltap', () => {
         console.log("[main.js - createLabel()] : Label Double Clicked");
-        var labelPosition = label.getAbsolutePosition();
-        var stageBox = stage.container().getBoundingClientRect();
-        var areaPosition = {
-            x: stageBox.left + labelPosition.x,
-            y: stageBox.top + labelPosition.y
-        };
-        var innerKonvaCanvas = document.createElement('canvas');
-        innerKonvaCanvas.classList.add('innerKonvaCanvas');
-        document.body.appendChild(innerKonvaCanvas);
-        let innerKonvaStage = new Konva.Stage({
-            container: innerKonvaCanvas,
+
+        // Create a new group to represent the inner canvas
+        let innerCanvasGroup = new Konva.Group({
+            x: label.x(),
+            y: label.y(),
+            id: 'innerCanvasGroup-' + LabelCount,
+        });
+
+        // Create a rectangle to serve as the background of the inner canvas
+        let innerCanvasBackground = new Konva.Rect({
             width: userLabelConfig.width,
-            height: userLabelConfig.height
+            height: userLabelConfig.height,
+            fill: userLabelConfig.labelBackgroundColor,
+            stroke: 'black',
+            strokeWidth: 1,
+            cornerRadius: 4,
         });
-        let backgroundLayer = new Konva.Layer();
-        let items = new Konva.Layer();
-        innerKonvaStage.add(backgroundLayer);
-        innerKonvaStage.add(items);
-        
 
-        
+        // Add the background to the group
+        innerCanvasGroup.add(innerCanvasBackground);
 
-        innerKonvaCanvas.style.position = 'absolute';
-        innerKonvaCanvas.style.top = areaPosition.y + 'px';
-        innerKonvaCanvas.style.left = areaPosition.x + 'px';
-        innerKonvaCanvas.style.width = userLabelConfig.width + 'px';
-        innerKonvaCanvas.style.height = userLabelConfig.height + 'px';
+        // Add the group to an existing layer (e.g., layer2)
+        layer2.add(innerCanvasGroup);
 
-        innerKonvaCanvas.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                innerKonvaCanvas.remove();
-            }
-        });
-        console.log("[main.js - createLabel()] : Label canvas created");
+        console.log("[main.js - createLabel()] : Inner canvas group created");
     });
-    
+
     return label;
 }
+
 
 function addLabel() {
     let x, y;
@@ -150,13 +142,17 @@ $(function () {
     let target = null;
     let isHandlerDragging = false;
 
-    $(document).on('mousedown', '.resize-bar-v', function (e) {
+    $(document).on('mousedown touchstart', '.resize-bar-v', function (e) {
         isHandlerDragging = true;
         target = $(this).attr('data-krus-target');
         e.preventDefault(); // Prevent default action
     });
 
-    $(document).on('mousemove', function (e) {
+    $(document).on('mousedown touchstart', '#innerEditorCanvas:not(.resize-bar-v)', function (e) {
+        isCanvasDragging = true;
+    });
+
+    $(document).on('mousemove touchmove', function (e) {
         if (!isHandlerDragging) {
             return;
         }
@@ -193,57 +189,9 @@ $(function () {
         }
     });
 
-    $(document).on('mouseup', function () {
+    $(document).on('mouseup touchend touchcancel', function () {
         isHandlerDragging = false;
-        target = null; // Clear the target when mouse is released
-    });
-
-    $(document).on('touchstart', '.resize-bar-v', function (e) {
-        isHandlerDragging = true;
-        target = $(this).attr('data-krus-target');
-        e.preventDefault(); // Prevent default action
-    });
-
-    $(document).on('touchmove', function (e) {
-        if (!isHandlerDragging) {
-            return;
-        }
-
-        if (target) {
-            let temptarget = target;
-            if (target.split('|').length != 1) {
-                temptarget = target.split('|')[0];
-            }
-            const minWidth = 200; // Minimum width of the target element
-            let offset; // Get the target element's left offset
-            const pointerPosition = e.touches[0].clientX;
-            let newWidth;
-            if (temptarget == '#innerLeft') {
-                offset = $(temptarget).offset().left;
-                newWidth = Math.min(500, Math.max(minWidth, pointerPosition - offset));
-            } else if (temptarget == '#innerRight') {
-                offset = document.getElementById(temptarget.replace('#', '')).getBoundingClientRect().right;
-                newWidth = Math.min(500, Math.max(minWidth, offset - pointerPosition) - 20);
-            }
-
-            if (target.split('|').length == 1) {
-                $(temptarget).css('width', newWidth + 'px');
-            } else {
-                let bodyStyles = window.getComputedStyle(document.body);
-                let innermargin = bodyStyles.getPropertyValue('--inner-margin');
-                $(target.split('|')[0]).css('width', newWidth + 'px');
-                $(target.split('|')[1]).css('width', newWidth - innermargin.replace('px', '') * 2 + 'px');
-            }
-        }
-    });
-
-    $(document).on('touchend', function () {
-        isHandlerDragging = false;
-        target = null; // Clear the target when mouse is released
-    });
-
-    $(document).on('touchcancel', function () {
-        isHandlerDragging = false;
+        isCanvasDragging = false;
         target = null; // Clear the target when mouse is released
     });
 
@@ -268,15 +216,98 @@ $(function () {
     });
 
     backgroundLayer = new Konva.Layer();
-    imageLayer = new Konva.Layer();
-    textLayer = new Konva.Layer();
-    layer1 = new Konva.Layer();
-    layer2 = new Konva.Layer();
+    labelLayer = new Konva.Layer();
+    objectLayer = new Konva.Layer();
+    extraLayer1 = new Konva.Layer();
+    extraLayer2 = new Konva.Layer();
     stage.add(backgroundLayer);
-    stage.add(imageLayer);
-    stage.add(textLayer);
-    stage.add(layer1);
-    stage.add(layer2);
+    stage.add(labelLayer);
+    stage.add(objectLayer);
+    stage.add(extraLayer1);
+    stage.add(extraLayer2);
+
+
+
+
+
+
+
+
+    interact('#innerEditorCanvas').draggable({
+        inertia: true,
+        listeners: {
+            move(event) {
+                const target = event.target;
+                const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+                target.style.transform = `translate(${x}px, ${y}px)`;
+                target.setAttribute('data-x', x);
+                target.setAttribute('data-y', y);
+            },
+        },
+    });
+
+    // Add draggable objects using Interact.js
+    interact('.addItem').draggable({
+        listeners: {
+            move(event) {
+                const target = event.target;
+                const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+                target.style.transform = `translate(${x}px, ${y}px)`;
+                target.setAttribute('data-x', x);
+                target.setAttribute('data-y', y);
+            },
+            end(event) {
+                const rect = stage.container().getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                // If dropped inside the Konva stage, add the object
+                if (x > 0 && x < stage.width() && y > 0 && y < stage.height()) {
+                    const config = {
+                        x: x,
+                        y: y,
+                        width: 100,
+                        height: 30,
+                        text: 'Dropped Item',
+                    };
+
+                    addKonvaItem(config);
+                    $("#itemContainer").append($("<button>").text("Add New Item").addClass("btn btn-primary addItem").attr("id", "addTestItem"));
+                }
+            },
+        },
+    });
+
+    // Function to add items to the Konva layer
+    function addKonvaItem(config) {
+        const text = new Konva.Text({
+            x: config.x,
+            y: config.y,
+            text: config.text,
+            fontSize: 18,
+            draggable: true,
+        });
+
+        objectLayer.add(text);
+        objectLayer.draw();
+    }
+
+    // Add test item button click handler
+    $('#addTestItem').on('click', function () {
+        addKonvaItem({ x: 50, y: 50, width: 100, height: 30, text: 'New Item' });
+    });
+
+
+
+
+
+
+
+
 
     stage.on('wheel', (e) => {
         // stop default scrolling
