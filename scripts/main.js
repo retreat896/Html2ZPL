@@ -2,10 +2,10 @@ let container;
 let width;
 let height;
 let backgroundLayer;
-let imageLayer;
-let textLayer;
-let layer1;
-let layer2;
+let labelLayer;
+let objectLayer;
+let extraLayer1;
+let extraLayer2;
 
 let stage;
 //Globals
@@ -71,10 +71,12 @@ function createLabel(positionalData) {
         innerCanvasGroup.add(innerCanvasBackground);
 
         // Add the group to an existing layer (e.g., layer2)
-        layer2.add(innerCanvasGroup);
+        labelLayer.add(innerCanvasGroup);
 
         console.log("[main.js - createLabel()] : Inner canvas group created");
     });
+
+    
 
     return label;
 }
@@ -233,20 +235,7 @@ $(function () {
 
 
 
-    interact('#innerEditorCanvas').draggable({
-        inertia: true,
-        listeners: {
-            move(event) {
-                const target = event.target;
-                const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
 
-                target.style.transform = `translate(${x}px, ${y}px)`;
-                target.setAttribute('data-x', x);
-                target.setAttribute('data-y', y);
-            },
-        },
-    });
 
     // Add draggable objects using Interact.js
     interact('.addItem').draggable({
@@ -261,9 +250,9 @@ $(function () {
                 target.setAttribute('data-y', y);
             },
             end(event) {
-                const rect = stage.container().getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
+                const rect = stage.container().getBoundingClientRect(); 
+                const x =  rect.left;
+                const y =  rect.top;
 
                 // If dropped inside the Konva stage, add the object
                 if (x > 0 && x < stage.width() && y > 0 && y < stage.height()) {
