@@ -76,7 +76,7 @@ function createLabel(positionalData) {
         console.log("[main.js - createLabel()] : Inner canvas group created");
     });
 
-    
+
 
     return label;
 }
@@ -217,11 +217,11 @@ $(function () {
         draggable: true,
     });
 
-    backgroundLayer = new Konva.Layer();
-    labelLayer = new Konva.Layer();
-    objectLayer = new Konva.Layer();
-    extraLayer1 = new Konva.Layer();
-    extraLayer2 = new Konva.Layer();
+    backgroundLayer = new Konva.Layer({ id: 'backgroundLayer' });
+    labelLayer = new Konva.Layer({ id: 'labelLayer' });
+    objectLayer = new Konva.Layer({ id: 'objectLayer' });
+    extraLayer1 = new Konva.Layer({ id: 'extraLayer1' });
+    extraLayer2 = new Konva.Layer({ id: 'extraLayer2' });
     stage.add(backgroundLayer);
     stage.add(labelLayer);
     stage.add(objectLayer);
@@ -233,14 +233,70 @@ $(function () {
 
 
 
+    $("#innerEditorCanvas").on("mouseover", function (e) {
+        if (window.isAddingObject) {
+            $(this).css("cursor", "crosshair");
+
+            // Create a temporary "shadow" object
+            let draggedObject = document.querySelector('.addItem');
+            const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
+            const transform = stage.getAbsoluteTransform().copy().invert(); // Invert stage transformations
+
+            // Convert pointer position to stage-local coordinates
+            const stagePos = transform.point({
+                x: pointerPos.x,
+                y: pointerPos.y
+            });
+
+            const { x, y } = stagePos;
+
+            // Create the shadow Konva object
+            let shadow = new Konva.Rect({
+                width: draggedObject.offsetWidth,
+                height: draggedObject.offsetHeight,
+                x: x,
+                y: y,
+                fill: 'rgba(0, 0, 0, 0.3)', // Semi-transparent shadow
+                listening: false, // Disable events for the shadow object
+            });
+
+            objectLayer.add(shadow);
+            objectLayer.draw(); // Redraw the layer to show the shadow
+
+            // Listen for mousemove to make the object follow the cursor
+            stage.on('mousemove', (evt) => {
+                const pointerPos = stage.getPointerPosition(); // Current pointer position
+                const localPos = stage.getAbsoluteTransform().copy().invert().point({
+                    x: pointerPos.x,
+                    y: pointerPos.y,
+                });
+
+                shadow.position({
+                    x: localPos.x,
+                    y: localPos.y,
+                });
+
+                objectLayer.batchDraw(); // Efficiently redraw only updated parts
+            });
+
+            // On mouseleave or mouseup, finalize or remove the shadow
+            $("#innerEditorCanvas").on("mouseleave mouseup", function () {
+                stage.off('mousemove'); // Remove mousemove listener
+                shadow.destroy(); // Remove the shadow object
+                objectLayer.draw(); // Update the layer
+            });
+        }
+    });
 
 
 
 
     // Add draggable objects using Interact.js
     interact('.addItem').draggable({
+        
         listeners: {
             move(event) {
+                window.isAddingObject = true;
                 const target = event.target;
                 const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
                 const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
@@ -248,36 +304,67 @@ $(function () {
                 target.style.transform = `translate(${x}px, ${y}px)`;
                 target.setAttribute('data-x', x);
                 target.setAttribute('data-y', y);
+                //if move over canvas add a shadow on the canvas of the object
+
             },
             end(event) {
-                const rect = stage.container().getBoundingClientRect(); 
-                const x =  rect.left;
-                const y =  rect.top;
+                window.isAddingObject = false;
+                let target = event.target;
+                const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
+                const transform = stage.getAbsoluteTransform().copy().invert(); // Invert stage transformations
+                // Convert pointer position to stage-local coordinates
+                const stagePos = transform.point({
+                    x: pointerPos.x,
+                    y: pointerPos.y
+                });
+                const { x, y } = stagePos;
+                //check if the user dropped it onto a valid label in the label layer.
+                const layer = stage.findOne('#labelLayer'); // Replace with your layer's ID or name
 
-                // If dropped inside the Konva stage, add the object
-                if (x > 0 && x < stage.width() && y > 0 && y < stage.height()) {
+                const hitShape = layer.children.find((shape) =>
+                    shape.getStage().getRelativePointerPosition(pointerPos)
+                );
+                // Check if the position is inside the stage bounds
+                if (x >= 0 && x <= stage.width() && y >= 0 && y <= stage.height() && hitShape) {
                     const config = {
                         x: x,
                         y: y,
                         width: 100,
                         height: 30,
-                        text: 'Dropped Item',
+                        fill: 'blue', // Or any other color or configuration
                     };
-
+                    // Add the Konva item at the calculated position
                     addKonvaItem(config);
-                    $("#itemContainer").append($("<button>").text("Add New Item").addClass("btn btn-primary addItem").attr("id", "addTestItem"));
+                    // Example: Add visual feedback to the item container
+                    $("#itemContainer").prepend(
+                        $("<img>")
+                            .addClass("img-fluid rounded-top addItem")
+                            .attr("id", "addTestItem")
+                            .attr("src", "images/image.jpg")
+                    );
+                } else {
+                    // return the item to its original position
+                    $("#itemContainer").prepend(
+                        $("<img>")
+                            .addClass("img-fluid rounded-top addItem")
+                            .attr("id", "addTestItem")
+                            .attr("src", "images/image.jpg")
+                    );
                 }
+                target.remove();
             },
         },
     });
 
     // Function to add items to the Konva layer
     function addKonvaItem(config) {
-        const text = new Konva.Text({
+        const text = new Konva.Rect({
             x: config.x,
             y: config.y,
-            text: config.text,
             fontSize: 18,
+            fill: config.fill,
+            width: config.width,
+            height: config.height,
             draggable: true,
         });
 
