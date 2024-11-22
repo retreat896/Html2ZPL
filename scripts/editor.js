@@ -129,12 +129,13 @@ class itemTypes {
                         break;
                     case "code128":
                         console.log("Code 128 Bar Code.");
-                        let test = new Konva.Text({
+                        let test = new Konva.Rect({
                             x: config.x,
                             y: config.y,
                             width: config.width,
                             height: config.height,
                             text: config.text,
+                            fill: "red",
                         })
                         break;
                     case "industrial2of5":
