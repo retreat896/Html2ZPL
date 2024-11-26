@@ -1,8 +1,13 @@
 # ZPL GUI Editor V2
 =====================
-## Current Status: ```Draft -> Development```
+## Current Status: ```Proof of Concept -> Development```
 
-This is the second version of the ZPL GUI Editor. This version is a complete rewrite of the original ZPL GUI Editor.
+**DO NOT EXPECT THIS PROJECT TO WORK FULLY. IT IS UNDER DEVELOPMENT AND IS
+LIKELY TO CONTAIN BUGS AND INCOMPLETE FEATURES.**
+This project is meant to emulate a photo editor for the ZPL language once it is
+complete. Currently, it has no ZPL functionality at all.
+
+# TODO:
 
 ## Editor Features
 - [ ] [Add Labels to the editor](https://github.com/retreat896/Html2ZPL/issues/3)
