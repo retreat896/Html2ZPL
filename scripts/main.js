@@ -21,12 +21,13 @@ let userLabelConfig = {
     padding: 10,
     labelCount: 0,
     labelSize: 'custom', // default label size
-    labelSpacing: 10,
+    labelPadding: 10,
     labelBorderWidth: 1,
-    labelBorderColor: 'black',
+    labelBorderColor: '#000000',
     labelBorderStyle: 'solid',
     labelBorderRadius: 0,
-    labelBackgroundColor: 'white',
+    labelBackgroundColor: '#ffffff',
+    editorBackgroundColor: '#ffffff',
     zoomSensitivity: 1.1,
     maxZoom: 1.5, // default max zoom level
 };
@@ -85,24 +86,22 @@ function createLabel(positionalData) {
 function addLabel() {
     let x, y;
     let labelsPerRow = userLabelConfig.labelsPerRow ?? 5;
-    let padding = userLabelConfig.padding ?? 10;
+    let padding = userLabelConfig.labelPadding ?? 10;
     let labelWidth = userLabelConfig.width;
     let labelHeight = userLabelConfig.height;
-    // Current label's column (0-based)
-    let columnIndex = LabelCount % labelsPerRow;
 
-    // Current label's row (0-based)
+    let columnIndex = LabelCount % labelsPerRow;
     let rowIndex = Math.floor(LabelCount / labelsPerRow);
 
-    // Calculate the x position: columnIndex * (label width + padding)
     x = columnIndex * (labelWidth + padding);
-
-    // Calculate the y position: rowIndex * (label height + padding)
     y = rowIndex * (labelHeight + padding);
 
-    // Add the label to the canvas at the calculated x and y
-    backgroundLayer.add(createLabel({ x: x, y: y }));
+    let label = createLabel({ x: x, y: y });
+
+    labelLayer.add(label);
+    labelLayer.draw(); // <-- Force redraw to update positions
 }
+
 
 function removeLabel(config) {
     let label = Konva.findOne('#' + config.id);
@@ -111,17 +110,55 @@ function removeLabel(config) {
     }
 }
 
-//width sliders
+function reOrderLabels() {
+    let labelsPerRow = userLabelConfig.labelsPerRow ?? 5;
+    let padding = userLabelConfig.labelPadding ?? 10;
+    let labelWidth = userLabelConfig.width;
+    let labelHeight = userLabelConfig.height;
+
+    if (!labelLayer) {
+        console.error("LabelLayer not found!");
+        return;
+    }
+
+    let labels = labelLayer.find('Rect'); // Get all label rects
+    console.log(labels.length + " labels found.");
+
+    labels.forEach((label, index) => {
+        console.log("Reordering label " + index);
+        let columnIndex = index % labelsPerRow;
+        let rowIndex = Math.floor(index / labelsPerRow);
+
+        let newX = columnIndex * (labelWidth + padding);
+        let newY = rowIndex * (labelHeight + padding);
+
+        label.to({
+            x: newX,
+            y: newY,
+            duration: 0.3, // Smooth animation
+            easing: Konva.Easings.EaseInOut,
+        });
+    });
+
+    labelLayer.draw(); // Redraw layer
+}
+
+function changeBackgroundColor(color) {
+    stage.container().style.backgroundColor = color;
+}
+
+
+//reset label settings to user defaults
 $(function () {
     $('#labelSize').val(userLabelConfig.labelSize);
 
     // Custom Label Size
-    $('#labelWidth').val(userLabelConfig.width);
-    $('#labelHeight').val(userLabelConfig.height);
+    $('#labelWidth').val(Math.floor(userLabelConfig.width/100));
+    $('#labelHeight').val(Math.floor(userLabelConfig.height/100));
 
-    // Label Spacing
-    $('#labelSpacing').val(userLabelConfig.labelSpacing);
-    $('#labelSpacingValue').val(userLabelConfig.labelSpacing);
+    // Label Padding
+    $('#labelPadding').val(userLabelConfig.labelPadding);
+    $('#labelPaddingValue').val(userLabelConfig.labelPadding);
 
     // Label Border Settings
     $('#labelBorderWidth').val(userLabelConfig.labelBorderWidth);
@@ -133,9 +170,10 @@ $(function () {
 
     // Labels per row
     $('#labelsPerRow').val(userLabelConfig.labelsPerRow);
+    $('#labelsPerRowValue').val(userLabelConfig.labelsPerRow);
 
     // Editor Settings
-    $('#editorBackgroundColor').val(userLabelConfig.fill);
+    $('#editorBackgroundColor').val(userLabelConfig.editorBackgroundColor);
     $('#editorZoomSensitivity').val(userLabelConfig.zoomSensitivity);
     $('#editorZoomSensitivityValue').val(userLabelConfig.zoomSensitivity);
     $('#editorMaxZoom').val(userLabelConfig.maxZoom);
@@ -203,6 +241,34 @@ $(function () {
     });
 });
 
+function isCrosshairInLabel() {
+    let crosshairPos = stage.getPointerPosition(); // Get current pointer position
+    let labels = labelLayer.find('Rect'); // Find all labels in the labelLayer
+
+    for (let i = 0; i < labels.length; i++) {
+        let label = labels[i];
+        let bbox = label.getClientRect(); // Get transformed bounding box
+
+        // Check if the crosshair position is inside the label's bounding box
+        if (
+            crosshairPos.x >= bbox.x &&
+            crosshairPos.x <= bbox.x + bbox.width &&
+            crosshairPos.y >= bbox.y &&
+            crosshairPos.y <= bbox.y + bbox.height
+        ) {
+            console.log(`Crosshair is inside label with ID: ${label.id()}`);
+            return true;
+        }
+    }
+
+    console.log('Crosshair is not inside any label');
+    return false;
+}
+
+function getValidLabelPosition() {
+
+}
+
 //konva
 $(function () {
     container = document.querySelector('#innerEditor');
@@ -265,6 +331,8 @@ $(function () {
 
             // Listen for mousemove to make the object follow the cursor
             stage.on('mousemove', (evt) => {
+                //if crosshair is within the label, show the preview.
+                if(!isCrosshairInLabel()) return;
                 const pointerPos = stage.getPointerPosition(); // Current pointer position
                 const localPos = stage.getAbsoluteTransform().copy().invert().point({
                     x: pointerPos.x,
@@ -318,14 +386,8 @@ $(function () {
                     y: pointerPos.y
                 });
                 const { x, y } = stagePos;
-                //check if the user dropped it onto a valid label in the label layer.
-                const layer = stage.findOne('#labelLayer'); // Replace with your layer's ID or name
-
-                const hitShape = layer.children.find((shape) =>
-                    shape.getStage().getRelativePointerPosition(pointerPos)
-                );
-                // Check if the position is inside the stage bounds
-                if (x >= 0 && x <= stage.width() && y >= 0 && y <= stage.height() && hitShape) {
+                let prevValidPosition = getValidLabelPosition();
+                if (isCrosshairInLabel()|| prevValidPosition) {
                     const config = {
                         x: x,
                         y: y,
@@ -417,3 +479,29 @@ $(function () {
         stage.position(newPos);
     });
 });
+
+
+
+$(document).on("input", "#labelPadding", function () {
+    userLabelConfig.labelPadding = parseInt($(this).val(), 10);
+    reOrderLabels();
+})
+
+$(document).on("input", "#labelsPerRow", function () {
+    userLabelConfig.labelsPerRow = parseInt($(this).val(), 10);
+    reOrderLabels();
+})
+
+$(document).on("input", "#labelSize", function () {
+    if($(this).val() == 'custom'){
+        $("#customLabelSize").removeClass("d-none");
+        
+    }else{
+        $("#customLabelSize").addClass("d-none");
+    }
+})
+
+$(document).on("input", "#labelWidth", function () {})
+$(document).on("input", "#labelHeight", function () {})
+$(document).on("input", "#labelBorderRadius", function () {})
+$(document).on("input", "#editorBackgroundColor", function () {changeBackgroundColor($(this).val())})

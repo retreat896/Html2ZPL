@@ -12,10 +12,10 @@
 
 //item on dblClick bdltap
 $(function () {
-    $(".addItem").on("click", function () {
-    console.log("[Editor.js - addItem()] : Adding Item");
-    addItem({type: "1dBarcode", subtype: "code128", x: 0, y: 0, width: 0, height: 0, text: "0123456789"});
-});
+    //create 5 labels by default
+    for (let i = 0; i < 5; i++) {
+        addLabel();
+    }
 })
 
 
