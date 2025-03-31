@@ -18,7 +18,7 @@
       <script src="./scripts/bootstrap.bundle.js"></script>
       <!-- jQuery v3.7.1 -->
       <script src="./scripts/jquery.js"></script>
-      <!-- Konva v9.3.15 -->
+      <!-- Konva v9.3.20 -->
       <script src="./scripts/konva.js" type="module"></script>
       <!-- InteractJS v1.10.27 -->
       <script src="./scripts/interact.js" type="module"></script>
@@ -29,6 +29,12 @@
       <script src="./scripts/editor.js"></script>
       <div id="page">
          <div id="nav">
+            <!-- 
+            File Options
+            Edit 
+            -->
+
+            <button class="btn bg-secondary text-white toggle text-underline">File</button>
             <img id="navLogo" src="./images/favicon.svg" alt="Logo" />
             <div id="navTitle" class="fs-4 fw-bold lh-1">ZPL Editor</div>
             <div id="navGitLink">
@@ -164,7 +170,7 @@
                         <div class="mb-3">
                            <label for="editorZoomSensitivity" class="form-label">Zoom Sensitivity</label>
                            <div class="input-group">
-                              <input type="range" class="form-range" min="0" max="2" step="0.1" id="editorZoomSensitivity" oninput="$('#editorZoomSensitivityValue').val(this.value)" />
+                              <input type="range" class="form-range" min="1" max="5" step="0.1" id="editorZoomSensitivity" oninput="$('#editorZoomSensitivityValue').val(this.value)" />
                               <input type="number" class="form-control" id="editorZoomSensitivityValue" oninput="$('#editorZoomSensitivity').val(this.value)" />
                            </div>
                         </div>
@@ -173,17 +179,17 @@
                         <div>
                            <label for="editorMaxZoom" class="form-label">Max Zoom</label>
                            <div class="input-group">
-                              <input type="range" class="form-range" min="0" max="2" step="0.1" id="editorMaxZoom" oninput="$('#editorMaxZoomValue').val(this.value)" />
+                              <input type="range" class="form-range" min="1" max="10" step="0.1" id="editorMaxZoom" oninput="$('#editorMaxZoomValue').val(this.value)" />
                               <input type="number" class="form-control" id="editorMaxZoomValue" oninput="$('#editorMaxZoom').val(this.value)" />
                            </div>
                         </div>
-                     </div>
-                     <!-- Item Selection -->
-                     <div>
-                        <h4>Add new item.</h4>
-                        <p>drag and drop. double click to add.</p>
-                        <div id="itemContainer">
-                           <img class="img-fluid rounded-top addItem" id="addTestItem" src="images/image.jpg" />
+                        <!-- Min Zoom -->
+                        <div>
+                           <label for="editorMinZoom" class="form-label">Min Zoom</label>
+                           <div class="input-group">
+                              <input type="range" class="form-range" min="0" max="2" step="0.1" id="editorMinZoom" oninput="$('#editorMinZoomValue').val(this.value)" />
+                              <input type="number" class="form-control" id="editorMinZoomValue" oninput="$('#editorMinZoom').val(this.value)" />
+                           </div>
                         </div>
                      </div>
                   </div>
@@ -200,11 +206,20 @@
             <div id="right">
                <div data-krus-target="#innerRight|#innerRight .inner" class="resize-bar-v"></div>
                <button class="btn bg-secondary text-white toggle" data-bs-toggle="collapse" data-bs-target="#innerRight"></button>
-               <div id="innerRight" class="collapse-horizontal collapse">
-                  <div class="inner"></div>
+               <div id="innerRight" class="collapse-horizontal show">
+                  <div class="inner">
+                     <!-- Item Selection -->
+                     <div>
+                        <h4>Add new item.</h4>
+                        <p>drag and drop. double click to add.</p>
+                        <div id="itemContainer">
+                           <img class="img-fluid rounded-top addItem" id="addTestItem" src="images/image.jpg" />
+                        </div>
+                     </div>
+                  </div>
                </div>
             </div>
          </div>
-      </div>
+      </>
    </body>
 </html>

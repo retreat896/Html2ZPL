@@ -2,12 +2,12 @@
  * TODO:
  * [ ] [Dynamic item creation](https://github.com/retreat896/Html2ZPL/issues/16)
  * [ ] [Multiple items](https://github.com/retreat896/Html2ZPL/issues/17)
-  * [ ] [Implement item list rendering](https://github.com/retreat896/Html2ZPL/issues/18)
-  * [ ] [Handle item selection and focus](https://github.com/retreat896/Html2ZPL/issues/19)
+ * [ ] [Implement item list rendering](https://github.com/retreat896/Html2ZPL/issues/18)
+ * [ ] [Handle item selection and focus](https://github.com/retreat896/Html2ZPL/issues/19)
  * [ ] [Add and remove items](https://github.com/retreat896/Html2ZPL/issues/20)
-  * [ ] [Implement item addition](https://github.com/retreat896/Html2ZPL/issues/21)
-  * [ ] [Implement item removal](https://github.com/retreat896/Html2ZPL/issues/22)
-  * [ ] [Handle item deletion confirmation](https://github.com/retreat896/Html2ZPL/issues/23)
+ * [ ] [Implement item addition](https://github.com/retreat896/Html2ZPL/issues/21)
+ * [ ] [Implement item removal](https://github.com/retreat896/Html2ZPL/issues/22)
+ * [ ] [Handle item deletion confirmation](https://github.com/retreat896/Html2ZPL/issues/23)
  */
 
 //item on dblClick bdltap
@@ -16,31 +16,33 @@ $(function () {
     for (let i = 0; i < 5; i++) {
         addLabel();
     }
-})
+});
 
-
-function addItem(config){
-    if(!config) {
+function addItem(config) {
+    if (!config) {
         console.error('[Editor.js - addItem()] : No Object Config provided');
         return;
     }
-    let label = document.getElementsByClassName("innerKonvacanvas")[0]
+    let label = document.getElementsByClassName('innerKonvacanvas')[0];
     let item1 = new item(config);
-    label.getLayer("items").add(item1);
+    label.getLayer('items').add(item1);
 }
 
-class label {
-
-}
-
-class item {
-
+class Label {
     constructor(config) {
-        if(!config) {
+        if (!config) {
+            console.error('[Editor.js - label.constructor()] : No Object Config provided');
+        }
+    }
+}
+
+class Item {
+    constructor(config) {
+        if (!config) {
             console.error('[Editor.js - item.constructor()] : No Object Config provided');
             return;
         }
-        
+
         this.config = config;
         this.type = this.config.type;
         this.x = this.config.x;
@@ -48,12 +50,10 @@ class item {
         this.width = this.config.width;
         this.height = this.config.height;
         try {
-            this.Object = itemTypes.getItem(type,subtype);
-            return this.Object;
+            this.Object = itemTypes.getItem(type, subtype);
         } catch (e) {
-            console.error("[Editor.js - item.constructor()] : " + e);
+            console.error('[Editor.js - item.constructor()] : ' + e);
         }
-
     }
 
     get() {
@@ -75,9 +75,8 @@ class item {
             this.Object.y(this.y);
             this.Object.width(this.width);
             this.Object.height(this.height);
-        }
-        catch (e) {
-            console.error("[Editor.js - item.edit()] : " + e);
+        } catch (e) {
+            console.error('[Editor.js - item.edit()] : ' + e);
         }
         return this.Object;
     }
@@ -85,141 +84,152 @@ class item {
     remove() {
         try {
             this.Object.destroy();
-        }
-        catch (e) {
-            console.error("[Editor.js - item.remove()] : " + e);
+        } catch (e) {
+            console.error('[Editor.js - item.remove()] : ' + e);
         }
     }
 
-
+    getX() {
+        return this.x;
+    }
+    getY() {
+        return this.y;
+    }
+    getWidth() {
+        return this.width;
+    }
+    getHeight() {
+        return this.height;
+    }
+    getType() {
+        return this.type;
+    }
+    getConfig() {
+        return this.config;
+    }
 }
 
 class itemTypes {
-
-    static getItem(type,subtype,config) {
+    static getItem(type, subtype, config) {
         switch (type) {
-            case "1dBarcode":
+            case '1dBarcode':
                 switch (subtype) {
-                    case "code11":
-                        console.log("Code 11 Bar Code.");
+                    case 'code11':
+                        console.log('Code 11 Bar Code.');
                         break;
-                    case "interleaved2of5":
-                        console.log("Interleaved 2 of 5 Bar Code.");
+                    case 'interleaved2of5':
+                        console.log('Interleaved 2 of 5 Bar Code.');
                         break;
-                    case "code39":
-                        console.log("Code 39 Bar Code.");
+                    case 'code39':
+                        console.log('Code 39 Bar Code.');
                         break;
-                    case "code49":
-                        console.log("Code 49 Bar Code.");
+                    case 'code49':
+                        console.log('Code 49 Bar Code.');
                         break;
-                    case "planetCode":
-                        console.log("Planet Code Bar Code.");
+                    case 'planetCode':
+                        console.log('Planet Code Bar Code.');
                         break;
-                    case "ean8":
-                        console.log("EAN-8 Bar Code.");
+                    case 'ean8':
+                        console.log('EAN-8 Bar Code.');
                         break;
-                    case "upcE":
-                        console.log("UPC-E Bar Code.");
+                    case 'upcE':
+                        console.log('UPC-E Bar Code.');
                         break;
-                    case "code93":
-                        console.log("Code 93 Bar Code.");
+                    case 'code93':
+                        console.log('Code 93 Bar Code.');
                         break;
-                    case "codablock":
-                        console.log("CODABLOCK Bar Code.");
+                    case 'codablock':
+                        console.log('CODABLOCK Bar Code.');
                         break;
-                    case "code128":
-                        console.log("Code 128 Bar Code.");
+                    case 'code128':
+                        console.log('Code 128 Bar Code.');
                         let test = new Konva.Rect({
                             x: config.x,
                             y: config.y,
                             width: config.width,
                             height: config.height,
                             text: config.text,
-                            fill: "red",
-                        })
+                            fill: 'red',
+                        });
                         break;
-                    case "industrial2of5":
-                        console.log("Industrial 2 of 5 Bar Code.");
+                    case 'industrial2of5':
+                        console.log('Industrial 2 of 5 Bar Code.');
                         break;
-                    case "standard2of5":
-                        console.log("Standard 2 of 5 Bar Code.");
+                    case 'standard2of5':
+                        console.log('Standard 2 of 5 Bar Code.');
                         break;
-                    case "ansiCodabar":
-                        console.log("ANSI Codabar Bar Code.");
+                    case 'ansiCodabar':
+                        console.log('ANSI Codabar Bar Code.');
                         break;
-                    case "logmars":
-                        console.log("LOGMARS Bar Code.");
+                    case 'logmars':
+                        console.log('LOGMARS Bar Code.');
                         break;
-                    case "msi":
-                        console.log("MSI Bar Code.");
+                    case 'msi':
+                        console.log('MSI Bar Code.');
                         break;
-                    case "plessey":
-                        console.log("Plessey Bar Code.");
+                    case 'plessey':
+                        console.log('Plessey Bar Code.');
                         break;
-                    case "upcA":
-                        console.log("UPC-A Bar Code.");
+                    case 'upcA':
+                        console.log('UPC-A Bar Code.');
                         break;
                     default:
-                        console.log("Unknown 1D barcode subtype.");
+                        console.log('Unknown 1D barcode subtype.');
                 }
                 break;
-            case "2dBarcode":
+            case '2dBarcode':
                 switch (subtype) {
-                    case "aztec":
-                        console.log("Aztec Bar Code.");
+                    case 'aztec':
+                        console.log('Aztec Bar Code.');
                         break;
-                    case "pdf417":
-                        console.log("PDF417 Bar Code.");
+                    case 'pdf417':
+                        console.log('PDF417 Bar Code.');
                         break;
-                    case "microPDF417":
-                        console.log("MicroPDF417 Bar Code.");
+                    case 'microPDF417':
+                        console.log('MicroPDF417 Bar Code.');
                         break;
-                    case "qrCode":
-                        console.log("QR Code Bar Code.");
+                    case 'qrCode':
+                        console.log('QR Code Bar Code.');
                         break;
-                    case "gs1Databar":
-                        console.log("GS1 Databar.");
+                    case 'gs1Databar':
+                        console.log('GS1 Databar.');
                         break;
-                    case "dataMatrix":
-                        console.log("Data Matrix Bar Code.");
+                    case 'dataMatrix':
+                        console.log('Data Matrix Bar Code.');
                         break;
-                    case "postal":
-                        console.log("POSTAL Bar Code.");
+                    case 'postal':
+                        console.log('POSTAL Bar Code.');
                         break;
                     default:
-                        console.log("Unknown 2D barcode subtype.");
+                        console.log('Unknown 2D barcode subtype.');
                 }
                 break;
-            case "graphic":
+            case 'graphic':
                 switch (subtype) {
-                    case "box":
-                        console.log("Graphic Box.");
+                    case 'box':
+                        console.log('Graphic Box.');
                         break;
-                    case "circle":
-                        console.log("Graphic Circle.");
+                    case 'circle':
+                        console.log('Graphic Circle.');
                         break;
-                    case "diagonalLine":
-                        console.log("Graphic Diagonal Line.");
+                    case 'diagonalLine':
+                        console.log('Graphic Diagonal Line.');
                         break;
-                    case "ellipse":
-                        console.log("Graphic Ellipse.");
+                    case 'ellipse':
+                        console.log('Graphic Ellipse.');
                         break;
-                    case "field":
-                        console.log("Graphic Field.");
+                    case 'field':
+                        console.log('Graphic Field.');
                         break;
-                    case "symbol":
-                        console.log("Graphic Symbol.");
+                    case 'symbol':
+                        console.log('Graphic Symbol.');
                         break;
                     default:
-                        console.log("Unknown graphic subtype.");
+                        console.log('Unknown graphic subtype.');
                 }
                 break;
             default:
-                console.log("Unsupported or non-visual ZPL command type.");
+                console.log('Unsupported or non-visual ZPL command type.');
         }
     }
-
-
 }
-
-

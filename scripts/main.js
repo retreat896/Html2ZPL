@@ -28,8 +28,9 @@ let userLabelConfig = {
     labelBorderRadius: 0,
     labelBackgroundColor: '#ffffff',
     editorBackgroundColor: '#ffffff',
-    zoomSensitivity: 1.1,
-    maxZoom: 1.5, // default max zoom level
+    zoomSensitivity: 2,
+    maxZoom: 1.5,
+    minZoom: 0.5,
 };
 let LabelCount = 0;
 
@@ -49,7 +50,7 @@ function createLabel(positionalData) {
     });
 
     label.on('dblclick dbltap', () => {
-        console.log("[main.js - createLabel()] : Label Double Clicked");
+        console.log('[main.js - createLabel()] : Label Double Clicked');
 
         // Create a new group to represent the inner canvas
         let innerCanvasGroup = new Konva.Group({
@@ -74,14 +75,11 @@ function createLabel(positionalData) {
         // Add the group to an existing layer (e.g., layer2)
         labelLayer.add(innerCanvasGroup);
 
-        console.log("[main.js - createLabel()] : Inner canvas group created");
+        console.log('[main.js - createLabel()] : Inner canvas group created');
     });
-
-
 
     return label;
 }
-
 
 function addLabel() {
     let x, y;
@@ -102,7 +100,6 @@ function addLabel() {
     labelLayer.draw(); // <-- Force redraw to update positions
 }
 
-
 function removeLabel(config) {
     let label = Konva.findOne('#' + config.id);
     if (label) {
@@ -117,15 +114,15 @@ function reOrderLabels() {
     let labelHeight = userLabelConfig.height;
 
     if (!labelLayer) {
-        console.error("LabelLayer not found!");
+        console.error('LabelLayer not found!');
         return;
     }
 
     let labels = labelLayer.find('Rect'); // Get all label rects
-    console.log(labels.length + " labels found.");
+    console.log(labels.length + ' labels found.');
 
     labels.forEach((label, index) => {
-        console.log("Reordering label " + index);
+        console.log('Reordering label ' + index);
         let columnIndex = index % labelsPerRow;
         let rowIndex = Math.floor(index / labelsPerRow);
 
@@ -147,14 +144,14 @@ function changeBackgroundColor(color) {
     stage.container().style.backgroundColor = color;
 }
 
-
 //reset label settings to user defaults
+//on document ready
 $(function () {
     $('#labelSize').val(userLabelConfig.labelSize);
 
     // Custom Label Size
-    $('#labelWidth').val(Math.floor(userLabelConfig.width/100));
-    $('#labelHeight').val(Math.floor(userLabelConfig.height/100));
+    $('#labelWidth').val(Math.floor(userLabelConfig.width / 100));
+    $('#labelHeight').val(Math.floor(userLabelConfig.height / 100));
 
     // Label Padding
     $('#labelPadding').val(userLabelConfig.labelPadding);
@@ -178,6 +175,8 @@ $(function () {
     $('#editorZoomSensitivityValue').val(userLabelConfig.zoomSensitivity);
     $('#editorMaxZoom').val(userLabelConfig.maxZoom);
     $('#editorMaxZoomValue').val(userLabelConfig.maxZoom);
+    $('#editorMinZoom').val(userLabelConfig.minZoom);
+    $('#editorMinZoomValue').val(userLabelConfig.minZoom);
 
     let target = null;
     let isHandlerDragging = false;
@@ -234,11 +233,6 @@ $(function () {
         isCanvasDragging = false;
         target = null; // Clear the target when mouse is released
     });
-
-    $(document).on('input', '#labelsPerRow', function () {
-        let value = $(this).val();
-        userLabelConfig.labelsPerRow = value;
-    });
 });
 
 function isCrosshairInLabel() {
@@ -250,12 +244,7 @@ function isCrosshairInLabel() {
         let bbox = label.getClientRect(); // Get transformed bounding box
 
         // Check if the crosshair position is inside the label's bounding box
-        if (
-            crosshairPos.x >= bbox.x &&
-            crosshairPos.x <= bbox.x + bbox.width &&
-            crosshairPos.y >= bbox.y &&
-            crosshairPos.y <= bbox.y + bbox.height
-        ) {
+        if (crosshairPos.x >= bbox.x && crosshairPos.x <= bbox.x + bbox.width && crosshairPos.y >= bbox.y && crosshairPos.y <= bbox.y + bbox.height) {
             console.log(`Crosshair is inside label with ID: ${label.id()}`);
             return true;
         }
@@ -265,8 +254,93 @@ function isCrosshairInLabel() {
     return false;
 }
 
-function getValidLabelPosition() {
+function getValidLabelPosition() {}
 
+function adjustZoom(e) {
+    if (!e || !e.evt) {
+        let currentZoom = stage.scaleX();
+        let tempScale = currentZoom;
+
+        if (currentZoom > userLabelConfig.maxZoom) {
+            tempScale = userLabelConfig.maxZoom;
+        } else if (currentZoom < userLabelConfig.minZoom) {
+            tempScale = userLabelConfig.minZoom;
+        }
+
+        const stageBox = stage.getClientRect();
+        const containerBox = container.getBoundingClientRect();
+
+        const offsetX = (containerBox.width - stageBox.width * tempScale) / 2;
+        const offsetY = (containerBox.height - stageBox.height * tempScale) / 2;
+
+        stage.to({
+            scaleX: tempScale,
+            scaleY: tempScale,
+            x: offsetX,
+            y: offsetY,
+            duration: 0.2,
+            easing: Konva.Easings.EaseInOut,
+        });
+
+        return;
+    }
+
+    // Prevent default scrolling behavior
+    e.evt.preventDefault();
+
+    let oldScale = stage.scaleX();
+    let pointer = stage.getPointerPosition();
+
+    // Get pointer position relative to the stage
+    let mousePointTo = {
+        x: (pointer.x - stage.x()) / oldScale,
+        y: (pointer.y - stage.y()) / oldScale,
+    };
+
+    // Determine zoom direction
+    let direction = e.evt.deltaY > 0 ? -1 : 1;
+
+    // Adjust zoom sensitivity for trackpads
+    if (e.evt.ctrlKey) {
+        direction = -direction;
+    }
+
+    // Calculate new scale
+    let newScale = direction > 0 ? oldScale * userLabelConfig.zoomSensitivity : oldScale / userLabelConfig.zoomSensitivity;
+
+    // Enforce min/max zoom
+    newScale = Math.max(userLabelConfig.minZoom, Math.min(userLabelConfig.maxZoom, newScale));
+
+    // Calculate new stage position
+    let newPos = {
+        x: pointer.x - mousePointTo.x * newScale,
+        y: pointer.y - mousePointTo.y * newScale,
+    };
+
+    // Apply the new scale and position
+    stage.to({
+        scaleX: newScale,
+        scaleY: newScale,
+        x: newPos.x,
+        y: newPos.y,
+        duration: 0.2,
+    });
+}
+
+// Function to add items to the Konva layer
+function addKonvaItem(config) {
+    const text = new Konva.Rect({
+        x: config.x,
+        y: config.y,
+        fontSize: 18,
+        fill: config.fill,
+        width: config.width,
+        height: config.height,
+        draggable: true,
+    });
+
+    objectLayer.add(text);
+    objectLayer.draw();
 }
 
 //konva
@@ -294,14 +368,9 @@ $(function () {
     stage.add(extraLayer1);
     stage.add(extraLayer2);
 
-
-
-
-
-
-    $("#innerEditorCanvas").on("mouseover", function (e) {
+    $('#innerEditorCanvas').on('mouseover', function (e) {
         if (window.isAddingObject) {
-            $(this).css("cursor", "crosshair");
+            $(this).css('cursor', 'crosshair');
 
             // Create a temporary "shadow" object
             let draggedObject = document.querySelector('.addItem');
@@ -311,7 +380,7 @@ $(function () {
             // Convert pointer position to stage-local coordinates
             const stagePos = transform.point({
                 x: pointerPos.x,
-                y: pointerPos.y
+                y: pointerPos.y,
             });
 
             const { x, y } = stagePos;
@@ -332,7 +401,7 @@ $(function () {
             // Listen for mousemove to make the object follow the cursor
             stage.on('mousemove', (evt) => {
                 //if crosshair is within the label, show the preview.
-                if(!isCrosshairInLabel()) return;
+                if (!isCrosshairInLabel()) return;
                 const pointerPos = stage.getPointerPosition(); // Current pointer position
                 const localPos = stage.getAbsoluteTransform().copy().invert().point({
                     x: pointerPos.x,
@@ -348,7 +417,7 @@ $(function () {
             });
 
             // On mouseleave or mouseup, finalize or remove the shadow
-            $("#innerEditorCanvas").on("mouseleave mouseup", function () {
+            $('#innerEditorCanvas').on('mouseleave mouseup', function () {
                 stage.off('mousemove'); // Remove mousemove listener
                 shadow.destroy(); // Remove the shadow object
                 objectLayer.draw(); // Update the layer
@@ -356,12 +425,8 @@ $(function () {
         }
     });
 
-
-
-
     // Add draggable objects using Interact.js
     interact('.addItem').draggable({
-        
         listeners: {
             move(event) {
                 window.isAddingObject = true;
@@ -373,7 +438,6 @@ $(function () {
                 target.setAttribute('data-x', x);
                 target.setAttribute('data-y', y);
                 //if move over canvas add a shadow on the canvas of the object
-
             },
             end(event) {
                 window.isAddingObject = false;
@@ -383,11 +447,11 @@ $(function () {
                 // Convert pointer position to stage-local coordinates
                 const stagePos = transform.point({
                     x: pointerPos.x,
-                    y: pointerPos.y
+                    y: pointerPos.y,
                 });
                 const { x, y } = stagePos;
                 let prevValidPosition = getValidLabelPosition();
-                if (isCrosshairInLabel()|| prevValidPosition) {
+                if (isCrosshairInLabel() || prevValidPosition) {
                     const config = {
                         x: x,
                         y: y,
@@ -398,110 +462,58 @@ $(function () {
                     // Add the Konva item at the calculated position
                     addKonvaItem(config);
                     // Example: Add visual feedback to the item container
-                    $("#itemContainer").prepend(
-                        $("<img>")
-                            .addClass("img-fluid rounded-top addItem")
-                            .attr("id", "addTestItem")
-                            .attr("src", "images/image.jpg")
-                    );
+                    $('#itemContainer').prepend($('<img>').addClass('img-fluid rounded-top addItem').attr('id', 'addTestItem').attr('src', 'images/image.jpg'));
                 } else {
                     // return the item to its original position
-                    $("#itemContainer").prepend(
-                        $("<img>")
-                            .addClass("img-fluid rounded-top addItem")
-                            .attr("id", "addTestItem")
-                            .attr("src", "images/image.jpg")
-                    );
+                    $('#itemContainer').prepend($('<img>').addClass('img-fluid rounded-top addItem').attr('id', 'addTestItem').attr('src', 'images/image.jpg'));
                 }
                 target.remove();
             },
         },
     });
 
-    // Function to add items to the Konva layer
-    function addKonvaItem(config) {
-        const text = new Konva.Rect({
-            x: config.x,
-            y: config.y,
-            fontSize: 18,
-            fill: config.fill,
-            width: config.width,
-            height: config.height,
-            draggable: true,
-        });
-
-        objectLayer.add(text);
-        objectLayer.draw();
-    }
-
-    // Add test item button click handler
-    $('#addTestItem').on('click', function () {
-        addKonvaItem({ x: 50, y: 50, width: 100, height: 30, text: 'New Item' });
-    });
-
-
-
-
-
-
-
-
-
-    stage.on('wheel', (e) => {
-        // stop default scrolling
-        e.evt.preventDefault();
-
-        let oldScale = stage.scaleX();
-        let pointer = stage.getPointerPosition();
-
-        let mousePointTo = {
-            x: (pointer.x - stage.x()) / oldScale,
-            y: (pointer.y - stage.y()) / oldScale,
-        };
-
-        // how to scale? Zoom in? Or zoom out?
-        let direction = e.evt.deltaY > 0 ? -1 : 1;
-
-        // when we zoom on trackpad, e.evt.ctrlKey is true
-        // in that case lets revert direction
-        if (e.evt.ctrlKey) {
-            direction = -direction;
-        }
-
-        let newScale = direction > 0 ? oldScale * userLabelConfig.zoomSensitivity : oldScale / scaleBy;
-
-        stage.scale({ x: newScale, y: newScale });
-
-        let newPos = {
-            x: pointer.x - mousePointTo.x * newScale,
-            y: pointer.y - mousePointTo.y * newScale,
-        };
-        stage.position(newPos);
-    });
+    stage.on('wheel', adjustZoom);
 });
-
-
-
-$(document).on("input", "#labelPadding", function () {
+$(document).on('input', '#labelPadding', function () {
     userLabelConfig.labelPadding = parseInt($(this).val(), 10);
     reOrderLabels();
-})
+});
 
-$(document).on("input", "#labelsPerRow", function () {
+$(document).on('input', '#labelsPerRow', function () {
     userLabelConfig.labelsPerRow = parseInt($(this).val(), 10);
     reOrderLabels();
-})
+});
 
-$(document).on("input", "#labelSize", function () {
-    if($(this).val() == 'custom'){
-        $("#customLabelSize").removeClass("d-none");
-        
-    }else{
-        $("#customLabelSize").addClass("d-none");
+$(document).on('input', '#labelSize', function () {
+    if ($(this).val() == 'custom') {
+        $('#customLabelSize').removeClass('d-none');
+    } else {
+        $('#customLabelSize').addClass('d-none');
     }
-})
+});
 
-$(document).on("input", "#labelWidth", function () {})
-$(document).on("input", "#labelHeight", function () {})
-$(document).on("input", "#labelBorderRadius", function () {})
-$(document).on("input", "#editorBackgroundColor", function () {changeBackgroundColor($(this).val())})
+$(document).on('input', '#labelWidth', function () {});
+$(document).on('input', '#labelHeight', function () {});
+$(document).on('input', '#labelBorderRadius', function () {});
+$(document).on('input', '#editorBackgroundColor', function () {
+    changeBackgroundColor($(this).val());
+});
+
+$(document).on('input', '#editorZoomSensitivity', function () {
+    userLabelConfig.zoomSensitivity = parseFloat($(this).val());
+});
+
+$(document).on('input', '#editorMaxZoom', function () {
+    userLabelConfig.maxZoom = parseFloat($(this).val());
+    adjustZoom();
+});
+
+$(document).on('input', '#editorMinZoom', function () {
+    userLabelConfig.minZoom = parseFloat($(this).val());
+    adjustZoom();
+});
+
+$(document).on('input', '#labelBorderWidth', function () {});
+$(document).on('input', '#labelBorderColor', function () {});
+$(document).on('input', '#labelBackgroundColor', function () {});
+$(document).on('input', '#labelBorderStyle', function () {});
