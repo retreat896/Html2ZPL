@@ -147,36 +147,7 @@ function changeBackgroundColor(color) {
 //reset label settings to user defaults
 //on document ready
 $(function () {
-    $('#labelSize').val(userLabelConfig.labelSize);
-
-    // Custom Label Size
-    $('#labelWidth').val(Math.floor(userLabelConfig.width / 100));
-    $('#labelHeight').val(Math.floor(userLabelConfig.height / 100));
-
-    // Label Padding
-    $('#labelPadding').val(userLabelConfig.labelPadding);
-    $('#labelPaddingValue').val(userLabelConfig.labelPadding);
-
-    // Label Border Settings
-    $('#labelBorderWidth').val(userLabelConfig.labelBorderWidth);
-    $('#labelBorderWidthValue').val(userLabelConfig.labelBorderWidth);
-    $('#labelBorderColor').val(userLabelConfig.labelBorderColor);
-    $('#labelBackgroundColor').val(userLabelConfig.labelBackgroundColor);
-    $('#labelBorderStyle').val(userLabelConfig.labelBorderStyle);
-    $('#labelBorderRadius').val(userLabelConfig.labelBorderRadius);
-
-    // Labels per row
-    $('#labelsPerRow').val(userLabelConfig.labelsPerRow);
-    $('#labelsPerRowValue').val(userLabelConfig.labelsPerRow);
-
-    // Editor Settings
-    $('#editorBackgroundColor').val(userLabelConfig.editorBackgroundColor);
-    $('#editorZoomSensitivity').val(userLabelConfig.zoomSensitivity);
-    $('#editorZoomSensitivityValue').val(userLabelConfig.zoomSensitivity);
-    $('#editorMaxZoom').val(userLabelConfig.maxZoom);
-    $('#editorMaxZoomValue').val(userLabelConfig.maxZoom);
-    $('#editorMinZoom').val(userLabelConfig.minZoom);
-    $('#editorMinZoomValue').val(userLabelConfig.minZoom);
+    
 
     let target = null;
     let isHandlerDragging = false;
