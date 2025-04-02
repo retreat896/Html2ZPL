@@ -48,6 +48,7 @@
          //innerRight
          $("#innerRight").append(innerRight);//main
 
+
          $('#labelSize').val(userLabelConfig.labelSize);
 
          // Custom Label Size
@@ -102,10 +103,28 @@
          if (localStorage.getItem("rightToggle") === "true") {
             $("#innerRight").addClass("collapse").removeClass("show");
          }
+         //on load testing
+         //create 1 label by default
+         for (let i = 0; i < 1; i++) {
+            let label = new Label(labelLayer, userLabelConfig);
+            label.render();
+         }
+
+         //create item draggable
+         let draggableTestConfig = { type: 'graphic', subtype: 'box' };
+         let testItem = new DragableItem(draggableTestConfig);
+         console.log($('#itemContainer').length)
+         $('#itemContainer').append(testItem.getDraggableDOM());
+         testItem.apply();
+         $('#innerEditorCanvas').on('mouseover', function (e) {
+            testItem.drag();
+         })
+         
+
+      });
 
 
-
-      });</script>
+   </script>
    <div id="page">
       <!--  Navigation LOADED FROM MODULELOADER-->
 
@@ -114,8 +133,8 @@
             <div id="innerLeft" class="collapse-horizontal show">
                <!-- innerLeft LOADED FROM MODULELOADER -->
             </div>
-            <button class="btn bg-secondary text-white toggle" data-bs-toggle="collapse"
-               data-bs-target="#innerLeft" onclick="localStorage.setItem('leftToggle', this.classList.contains('collapsed') ? 'true' : 'false')"></button>
+            <button class="btn bg-secondary text-white toggle" data-bs-toggle="collapse" data-bs-target="#innerLeft"
+               onclick="localStorage.setItem('leftToggle', this.classList.contains('collapsed') ? 'true' : 'false')"></button>
             <div data-krus-target="#innerLeft|#innerLeft .inner" class="resize-bar-v"></div>
          </div>
          <div id="editor">
@@ -126,13 +145,10 @@
 
          <div id="right">
             <div data-krus-target="#innerRight|#innerRight .inner" class="resize-bar-v"></div>
-            <button class="btn bg-secondary text-white toggle" data-bs-toggle="collapse"
-               data-bs-target="#innerRight" onclick="localStorage.setItem('rightToggle', this.classList.contains('collapsed') ? 'true' : 'false')"></button>
+            <button class="btn bg-secondary text-white toggle" data-bs-toggle="collapse" data-bs-target="#innerRight"
+               onclick="localStorage.setItem('rightToggle', this.classList.contains('collapsed') ? 'true' : 'false')"></button>
             <div id="innerRight" class="collapse-horizontal show">
-               <div class="inner">
-                  <!-- innerRight LOADED FROM MODULELOADER -->
-                  
-               </div>
+               <!-- innerRight LOADED FROM MODULELOADER -->
             </div>
          </div>
       </div>

@@ -40,8 +40,6 @@ function changeBackgroundColor(color) {
 //reset label settings to user defaults
 //on document ready
 $(function () {
-    
-
     let target = null;
     let isHandlerDragging = false;
 
@@ -54,7 +52,7 @@ $(function () {
     $(document).on('mousedown touchstart', '#innerEditorCanvas:not(.resize-bar-v)', function (e) {
         isCanvasDragging = true;
     });
-
+    // Resize bars
     $(document).on('mousemove touchmove', function (e) {
         if (!isHandlerDragging) {
             return;
@@ -101,28 +99,6 @@ $(function () {
         target = null; // Clear the target when mouse is released
     });
 });
-
-function isCrosshairInLabel() {
-    let crosshairPos = stage.getPointerPosition(); // Get current pointer position
-    let labels = labelLayer.find('Rect'); // Find all labels in the labelLayer
-
-    for (let i = 0; i < labels.length; i++) {
-        let label = labels[i];
-        let bbox = label.getClientRect(); // Get transformed bounding box
-
-        // Check if the crosshair position is inside the label's bounding box
-        if (crosshairPos.x >= bbox.x && crosshairPos.x <= bbox.x + bbox.width && crosshairPos.y >= bbox.y && crosshairPos.y <= bbox.y + bbox.height) {
-            console.log(`Crosshair is inside label with ID: ${label.id()}`);
-            return true;
-        }
-    }
-
-    console.log('Crosshair is not inside any label');
-    return false;
-}
-
-function getValidLabelPosition() {}
-
 function adjustZoom(e) {
     if (!e || !e.evt) {
         let currentZoom = stage.scaleX();
@@ -194,22 +170,6 @@ function adjustZoom(e) {
     });
 }
 
-// Function to add items to the Konva layer
-function addKonvaItem(config) {
-    const text = new Konva.Rect({
-        x: config.x,
-        y: config.y,
-        fontSize: 18,
-        fill: config.fill,
-        width: config.width,
-        height: config.height,
-        draggable: true,
-    });
-
-    objectLayer.add(text);
-    objectLayer.draw();
-}
-
 //konva
 $(function () {
     container = document.querySelector('#innerEditor');
@@ -234,121 +194,16 @@ $(function () {
     stage.add(objectLayer);
     stage.add(extraLayer1);
     stage.add(extraLayer2);
-
-    $('#innerEditorCanvas').on('mouseover', function (e) {
-        if (window.isAddingObject) {
-            $(this).css('cursor', 'crosshair');
-
-            // Create a temporary "shadow" object
-            let draggedObject = document.querySelector('.addItem');
-            const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
-            const transform = stage.getAbsoluteTransform().copy().invert(); // Invert stage transformations
-
-            // Convert pointer position to stage-local coordinates
-            const stagePos = transform.point({
-                x: pointerPos.x,
-                y: pointerPos.y,
-            });
-
-            const { x, y } = stagePos;
-
-            // Create the shadow Konva object
-            let shadow = new Konva.Rect({
-                width: draggedObject.offsetWidth,
-                height: draggedObject.offsetHeight,
-                x: x,
-                y: y,
-                fill: 'rgba(0, 0, 0, 0.3)', // Semi-transparent shadow
-                listening: false, // Disable events for the shadow object
-            });
-
-            objectLayer.add(shadow);
-            objectLayer.draw(); // Redraw the layer to show the shadow
-
-            // Listen for mousemove to make the object follow the cursor
-            stage.on('mousemove', (evt) => {
-                //if crosshair is within the label, show the preview.
-                if (!isCrosshairInLabel()) return;
-                const pointerPos = stage.getPointerPosition(); // Current pointer position
-                const localPos = stage.getAbsoluteTransform().copy().invert().point({
-                    x: pointerPos.x,
-                    y: pointerPos.y,
-                });
-
-                shadow.position({
-                    x: localPos.x,
-                    y: localPos.y,
-                });
-
-                objectLayer.batchDraw(); // Efficiently redraw only updated parts
-            });
-
-            // On mouseleave or mouseup, finalize or remove the shadow
-            $('#innerEditorCanvas').on('mouseleave mouseup', function () {
-                stage.off('mousemove'); // Remove mousemove listener
-                shadow.destroy(); // Remove the shadow object
-                objectLayer.draw(); // Update the layer
-            });
-        }
-    });
-
-    // Add draggable objects using Interact.js
-    interact('.addItem').draggable({
-        listeners: {
-            move(event) {
-                window.isAddingObject = true;
-                const target = event.target;
-                const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-
-                target.style.transform = `translate(${x}px, ${y}px)`;
-                target.setAttribute('data-x', x);
-                target.setAttribute('data-y', y);
-                //if move over canvas add a shadow on the canvas of the object
-            },
-            end(event) {
-                window.isAddingObject = false;
-                let target = event.target;
-                const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
-                const transform = stage.getAbsoluteTransform().copy().invert(); // Invert stage transformations
-                // Convert pointer position to stage-local coordinates
-                const stagePos = transform.point({
-                    x: pointerPos.x,
-                    y: pointerPos.y,
-                });
-                const { x, y } = stagePos;
-                let prevValidPosition = getValidLabelPosition();
-                if (isCrosshairInLabel() || prevValidPosition) {
-                    const config = {
-                        x: x,
-                        y: y,
-                        width: 100,
-                        height: 30,
-                        fill: 'blue', // Or any other color or configuration
-                    };
-                    // Add the Konva item at the calculated position
-                    addKonvaItem(config);
-                    // Example: Add visual feedback to the item container
-                    $('#itemContainer').prepend($('<img>').addClass('img-fluid rounded-top addItem').attr('id', 'addTestItem').attr('src', 'images/image.jpg'));
-                } else {
-                    // return the item to its original position
-                    $('#itemContainer').prepend($('<img>').addClass('img-fluid rounded-top addItem').attr('id', 'addTestItem').attr('src', 'images/image.jpg'));
-                }
-                target.remove();
-            },
-        },
-    });
-
     stage.on('wheel', adjustZoom);
 });
 $(document).on('input', '#labelPadding', function () {
     userLabelConfig.labelPadding = parseInt($(this).val(), 10);
-    reOrderLabels();
+    Label.reOrderLabels();
 });
 
 $(document).on('input', '#labelsPerRow', function () {
     userLabelConfig.labelsPerRow = parseInt($(this).val(), 10);
-    reOrderLabels();
+    Label.reOrderLabels();
 });
 
 $(document).on('input', '#labelSize', function () {
