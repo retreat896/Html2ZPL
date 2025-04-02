@@ -30,10 +30,13 @@
    <script src="./scripts/editor.js"></script>
    <script src="./scripts/moduleLoader.js"></script>
    <script>$(document).ready(async function () {
-         //add the navigation components to the page. 
+         //add the missing modules to the page.
          let navigation = await new ModuleLoader().loadModule("navigation");
+         //innerLeft
          let innerLeft = await new ModuleLoader().loadModule("innerLeft");
          let labelSizes = await new ModuleLoader().loadModule("labelSizes");
+         //innerRight
+         let innerRight = await new ModuleLoader().loadModule("innerRight");
 
          //nav
          $("#page").prepend(navigation);
@@ -41,6 +44,9 @@
          //innerLeft
          $("#innerLeft").append(innerLeft);//main
          $("#labelSize").append(labelSizes);//labelSizes
+
+         //innerRight
+         $("#innerRight").append(innerRight);//main
 
          $('#labelSize').val(userLabelConfig.labelSize);
 
@@ -74,6 +80,31 @@
          $('#editorMinZoomValue').val(userLabelConfig.minZoom);
 
 
+         //set sidebar widths using localStorage
+         let leftWidth = localStorage.getItem("innerLeftWidth");
+         let innerLeftWidth = localStorage.getItem("innerLeft .innerWidth");
+         let rightWidth = localStorage.getItem("innerRightWidth");
+         let innerRightWidth = localStorage.getItem("innerRight .innerWidth");
+
+         if (leftWidth) {
+            $("#innerLeft").css("width", leftWidth);
+            $("#innerLeft .inner").css("width", innerLeftWidth);
+         }
+         if (rightWidth) {
+            $("#innerRight").width(rightWidth);
+            $("#innerRight .inner").width(innerRightWidth);
+         }
+
+         // change collapsed state
+         if (localStorage.getItem("leftToggle") === "true") {
+            $("#innerLeft").addClass("collapse").removeClass("show");
+         }
+         if (localStorage.getItem("rightToggle") === "true") {
+            $("#innerRight").addClass("collapse").removeClass("show");
+         }
+
+
+
       });</script>
    <div id="page">
       <!--  Navigation LOADED FROM MODULELOADER-->
@@ -81,10 +112,10 @@
       <div id="content">
          <div id="left">
             <div id="innerLeft" class="collapse-horizontal show">
-
+               <!-- innerLeft LOADED FROM MODULELOADER -->
             </div>
             <button class="btn bg-secondary text-white toggle" data-bs-toggle="collapse"
-               data-bs-target="#innerLeft"></button>
+               data-bs-target="#innerLeft" onclick="localStorage.setItem('leftToggle', this.classList.contains('collapsed') ? 'true' : 'false')"></button>
             <div data-krus-target="#innerLeft|#innerLeft .inner" class="resize-bar-v"></div>
          </div>
          <div id="editor">
@@ -96,17 +127,11 @@
          <div id="right">
             <div data-krus-target="#innerRight|#innerRight .inner" class="resize-bar-v"></div>
             <button class="btn bg-secondary text-white toggle" data-bs-toggle="collapse"
-               data-bs-target="#innerRight"></button>
+               data-bs-target="#innerRight" onclick="localStorage.setItem('rightToggle', this.classList.contains('collapsed') ? 'true' : 'false')"></button>
             <div id="innerRight" class="collapse-horizontal show">
                <div class="inner">
-                  <!-- Item Selection -->
-                  <div>
-                     <h4>Add new item.</h4>
-                     <p>drag and drop. double click to add.</p>
-                     <div id="itemContainer">
-                        <img class="img-fluid rounded-top addItem" id="addTestItem" src="images/image.jpg" />
-                     </div>
-                  </div>
+                  <!-- innerRight LOADED FROM MODULELOADER -->
+                  
                </div>
             </div>
          </div>

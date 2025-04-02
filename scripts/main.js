@@ -189,12 +189,15 @@ $(function () {
             // Resize the target element based on the pointer position
             if (target.split('|').length == 1) {
                 $(temptarget).css('width', newWidth + 'px');
+                //store to localstorage
+                localStorage.setItem(`${temptarget.replace('#', '')}Width`, newWidth);
             } else {
                 let bodyStyles = window.getComputedStyle(document.body);
                 let innermargin = bodyStyles.getPropertyValue('--inner-margin');
                 $(target.split('|')[0]).css('width', newWidth + 'px');
                 $(target.split('|')[1]).css('width', newWidth - innermargin.replace('px', '') * 2 + 'px');
-                console.log('width', newWidth - innermargin.replace('px', '') * 2 + 'px');
+                localStorage.setItem(`${target.split('|')[0].replace('#', '')}Width`, newWidth);
+                localStorage.setItem(`${target.split('|')[1].replace('#', '')}Width`, newWidth - innermargin.replace('px', '') * 2);
             }
         }
     });

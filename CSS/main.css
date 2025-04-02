@@ -119,11 +119,13 @@
 
 #innerRight {
     max-height: 100%;
+    max-width: min-content;
     overflow-y: auto;
 }
 
 #innerLeft {
     max-height: 100%;
+    max-width: min-content;
     overflow-y: auto;
     backdrop-filter: blur(10px);
 }
