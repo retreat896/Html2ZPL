@@ -13,33 +13,132 @@
 //item on dblClick bdltap
 $(function () {
     //create 5 labels by default
-    for (let i = 0; i < 5; i++) {
-        addLabel();
+    for (let i = 0; i < 2; i++) {
+        let label = new Label(labelLayer, userLabelConfig);
+        label.addToLayer();
     }
 });
 
 function addItem(config) {
     if (!config) {
-        console.error('[Editor.js - addItem()] : No Object Config provided');
+        console.error('[Editor.js - addItem()] : No Item Config provided');
         return;
     }
     let label = document.getElementsByClassName('innerKonvacanvas')[0];
-    let item1 = new item(config);
+    let item1 = new Item(config);
     label.getLayer('items').add(item1);
 }
 
+function reOrderLabels() {
+    let labelsPerRow = userLabelConfig.labelsPerRow ?? 5;
+    let padding = userLabelConfig.labelPadding ?? 10;
+    let labelWidth = userLabelConfig.width;
+    let labelHeight = userLabelConfig.height;
+
+    if (!labelLayer) {
+        console.error('LabelLayer not found!');
+        return;
+    }
+
+    let labels = labelLayer.find('Rect'); // Get all label rects
+    console.log(labels.length + ' labels found.');
+
+    labels.forEach((label, index) => {
+        console.log('Reordering label ' + index);
+        let columnIndex = index % labelsPerRow;
+        let rowIndex = Math.floor(index / labelsPerRow);
+
+        let newX = columnIndex * (labelWidth + padding);
+        let newY = rowIndex * (labelHeight + padding);
+
+        label.to({
+            x: newX,
+            y: newY,
+            duration: 0.3, // Smooth animation
+            easing: Konva.Easings.EaseInOut,
+        });
+    });
+
+    labelLayer.draw(); // Redraw layer
+}
+
 class Label {
-    constructor(config) {
-        if (!config) {
-            console.error('[Editor.js - label.constructor()] : No Object Config provided');
+    static count = 0; // Static counter for label IDs
+    static id;
+    static label;
+
+    constructor(layer, config) {
+        if (!layer || !config) {
+            console.error('[Label] : Missing required parameters (layer, config)');
+            return;
         }
+        this.config = config;
+
+        let labelsPerRow = userLabelConfig.labelsPerRow ?? 5;
+        let padding = userLabelConfig.labelPadding ?? 10;
+        let columnIndex = Label.count % labelsPerRow;
+        let rowIndex = Math.floor(Label.count / labelsPerRow);
+
+        let x = columnIndex * (this.config.width + padding);
+        let y = rowIndex * (this.config.height + padding);
+
+        this.config.x = x;
+        this.config.y = y;
+        this.layer = layer;
+        this.id = `Label${++Label.count}`;
+        let label = new Konva.Rect({
+            x: this.config.x,
+            y: this.config.y,
+            width: this.config.width || userLabelConfig.width,
+            height: this.config.height || userLabelConfig.height,
+            fill: this.config.labelBackgroundColor || userLabelConfig.labelBackgroundColor,
+            stroke: this.config.labelBorderColor,
+            draggable: false,
+            id: this.id,
+        });
+        this.label = label;
+    }
+
+    addToLayer() {
+        this.layer.add(this.label);
+        this.layer.draw();
+    }
+
+    removeLabel() {
+        this.label?.destroy();
+        console.log(`[Label] : Removed ${this.id}`);
+    }
+
+    //getters
+    getLabel() {
+        if (!this.label) return console.error('[Label] : Label not found');
+        return this.label;
+    }
+
+    getId() {
+        return this.id;
+    }
+
+    //setters
+
+    //methods
+    makeDraggable() {
+        if (!this.label) return console.error('[Label] : Label not found');
+        this.label.on('dragmove', () => {
+            let position = this.label.position();
+            this.config.x = position.x;
+            this.config.y = position.y;
+            console.log(`[Label] : ${this.id} moved to (${position.x}, ${position.y})`);
+        });
+
+        this.label.draggable(true);
     }
 }
 
 class Item {
     constructor(config) {
         if (!config) {
-            console.error('[Editor.js - item.constructor()] : No Object Config provided');
+            console.error('[Editor.js - item.constructor()] : No Item Config provided');
             return;
         }
 
@@ -50,40 +149,39 @@ class Item {
         this.width = this.config.width;
         this.height = this.config.height;
         try {
-            this.Object = itemTypes.getItem(type, subtype);
+            this.Item = itemTypes.getItem(type, subtype);
         } catch (e) {
             console.error('[Editor.js - item.constructor()] : ' + e);
         }
     }
 
     get() {
-        return this.Object;
+        return this.Item;
     }
 
     edit(config) {
         if (!config) {
-            console.warn('[Editor.js - item.edit()] : No Object Config provided');
-            return this.Object;
+            console.warn('[Editor.js - item.edit()] : No Item Config provided');
+            return this.Item;
         }
-
-        this.x = config.x ?? this.x;
-        this.y = config.y ?? this.y;
-        this.width = config.width ?? this.width;
-        this.height = config.height ?? this.height;
-        try {
-            this.Object.x(this.x);
-            this.Object.y(this.y);
-            this.Object.width(this.width);
-            this.Object.height(this.height);
-        } catch (e) {
-            console.error('[Editor.js - item.edit()] : ' + e);
+        for (let key in config) {
+            if (config.hasOwnProperty(key)) {
+                if (key in this.config) {
+                    try {
+                        this.config[key] = config[key];
+                        this[key] = config[key];
+                    } catch (e) {
+                        console.error('[Editor.js - item.edit()] : ' + e);
+                    }
+                }
+            }
         }
-        return this.Object;
+        return this.Item;
     }
 
     remove() {
         try {
-            this.Object.destroy();
+            this.Item.destroy();
         } catch (e) {
             console.error('[Editor.js - item.remove()] : ' + e);
         }
