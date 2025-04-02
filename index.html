@@ -113,11 +113,7 @@
          //create item draggable
          let draggableTestConfig = { type: 'graphic', subtype: 'box' };
          let testItem = new DragableItem(draggableTestConfig);
-         console.log($('#itemContainer').length)
          $('#itemContainer').append(testItem.getDraggableDOM());
-         $('#innerEditorCanvas').on('mouseover', function (e) {
-            testItem.drag();
-         })
          
 
       });

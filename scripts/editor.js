@@ -43,6 +43,7 @@ class Label {
             stroke: this.config.labelBorderColor,
             draggable: false,
             id: this.id,
+            class: 'label',
         });
         this.label = label;
     }
@@ -123,17 +124,21 @@ class Item {
             console.error('[Editor.js - item.constructor()] : No Item Config provided');
             return;
         }
+        console.log(config);
 
         this.config = config;
         this.x = this.config.x;
         this.y = this.config.y;
         this.width = this.config.width;
         this.height = this.config.height;
+        this.label = this.config.label;
         this.type = this.config.type;
         this.subtype = this.config.subtype;
 
         try {
             this.Item = new ItemTypes(this.type, this.subtype, this.config).getItem();
+            this.allowResize();
+            this.allowDragging();
         } catch (e) {
             console.error('[Editor.js - item.constructor()] : ' + e);
         }
@@ -154,6 +159,159 @@ class Item {
             return;
         }
         layer.remove(this.Item);
+    }
+    allowResize() {
+        const layer = extraLayer1;
+        const tr = new Konva.Transformer({
+            keepRatio: false,
+            boundBoxFunc: (oldBox, newBox) => {
+                // Prevent the transformer from inverting width/height
+                if (newBox.width < 5 || newBox.height < 5) {
+                    return oldBox;
+                }
+                return newBox;
+            },
+        });
+        layer.add(tr);
+        let selectionRectangle = new Konva.Rect({
+            fill: 'rgba(0,0,255,0.5)',
+            visible: false,
+        });
+        layer.add(selectionRectangle);
+        let x1, y1, x2, y2;
+        stage.on('mousedown touchstart', (e) => {
+            // do nothing if we mousedown on any shape
+            if (e.target !== stage) {
+                return;
+            }
+            x1 = stage.getPointerPosition().x;
+            y1 = stage.getPointerPosition().y;
+            x2 = stage.getPointerPosition().x;
+            y2 = stage.getPointerPosition().y;
+
+            selectionRectangle.visible(true);
+            selectionRectangle.width(0);
+            selectionRectangle.height(0);
+        });
+        stage.on('mousemove touchmove', () => {
+            // do nothing if we didn't start selection
+            if (!selectionRectangle.visible()) {
+                return;
+            }
+            x2 = stage.getPointerPosition().x;
+            y2 = stage.getPointerPosition().y;
+
+            selectionRectangle.setAttrs({
+                x: Math.min(x1, x2),
+                y: Math.min(y1, y2),
+                width: Math.abs(x2 - x1),
+                height: Math.abs(y2 - y1),
+            });
+        });
+
+        stage.on('mouseup touchend', () => {
+            // do nothing if we didn't start selection
+            if (!selectionRectangle.visible()) {
+                return;
+            }
+            // update visibility in timeout, so we can check it in click event
+            setTimeout(() => {
+                selectionRectangle.visible(false);
+            });
+            try {
+                tr.nodes(selected);
+            } catch (e) {
+                //deselect
+                tr.nodes([]);
+            }
+        });
+        stage.on('click tap', function (e) {
+            // if we are selecting with rect, do nothing
+            if (selectionRectangle.visible()) {
+                return;
+            }
+
+            // if click on empty area - remove all selections
+            if (e.target === stage) {
+                tr.nodes([]);
+                return;
+            }
+
+            if (e.target.attrs.class === 'label') {
+                tr.nodes([]);
+                return;
+            }
+
+            // do we pressed shift or ctrl?
+            const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey;
+            const isSelected = tr.nodes().indexOf(e.target) >= 0;
+
+            if (!metaPressed && !isSelected) {
+                // if no key pressed and the node is not selected
+                // select just one
+                tr.nodes([e.target]);
+            } else if (metaPressed && isSelected) {
+                // if we pressed keys and node was selected
+                // we need to remove it from selection:
+                const nodes = tr.nodes().slice(); // use slice to have new copy of array
+                // remove node from array
+                nodes.splice(nodes.indexOf(e.target), 1);
+                tr.nodes(nodes);
+            } else if (metaPressed && !isSelected) {
+                // add the node into selection
+                const nodes = tr.nodes().concat([e.target]);
+                tr.nodes(nodes);
+            }
+            tr.nodes().forEach((node) => {
+                node.strokeScaleEnabled(false);
+            });
+        });
+    }
+    allowDragging() {
+        if (!this.label) {
+            console.error('[Item] : Label ID not found for this item.');
+            return;
+        }
+
+        let label = labelLayer.findOne(`#${this.label}`); // Find the associated label
+        if (!label) {
+            console.error(`[Item] : No label found with ID ${this.label}`);
+            return;
+        }
+
+        this.Item.on('dragmove', (e) => {
+            let item = e.target;
+
+            // Get label position and size
+            let labelPos = label.getClientRect({ relativeTo: stage });
+            let labelWidth = label.width();
+            let labelHeight = label.height();
+
+            // Get item size
+            let itemWidth = item.width() * item.scaleX();
+            let itemHeight = item.height() * item.scaleY();
+
+            // Get new position
+            let newX = item.x();
+            let newY = item.y();
+
+            // Prevent moving outside left/right
+            if (newX < labelPos.x) {
+                newX = labelPos.x;
+            } else if (newX + itemWidth > labelPos.x + labelWidth) {
+                newX = labelPos.x + labelWidth - itemWidth;
+            }
+
+            // Prevent moving outside top/bottom
+            if (newY < labelPos.y) {
+                newY = labelPos.y;
+            } else if (newY + itemHeight > labelPos.y + labelHeight) {
+                newY = labelPos.y + labelHeight - itemHeight;
+            }
+
+            // Apply corrected position
+            item.setPosition({ x: newX, y: newY });
+        });
     }
 
     getX() {
@@ -276,6 +434,7 @@ class ItemTypes {
                             height: config.height || 50,
                             fill: config.fill || '#fff',
                             stroke: config.stroke || '#000',
+                            draggable: true,
                         };
                         this.item = new Konva.Rect(this.config);
                         break;
@@ -299,7 +458,7 @@ class ItemTypes {
                 }
                 break;
             default:
-                console.log('Unsupported or non-visual ZPL command type.');
+                console.log('Unsupported or non-visual ZPL command type. ' + type, subtype);
         }
     }
 
@@ -322,13 +481,20 @@ function isCrosshairInLabel() {
 
         // Check if the crosshair position is inside the label's bounding box
         if (crosshairPos.x >= bbox.x && crosshairPos.x <= bbox.x + bbox.width && crosshairPos.y >= bbox.y && crosshairPos.y <= bbox.y + bbox.height) {
-            console.log(`Crosshair is inside label with ID: ${label.id()}`);
             return true;
         }
     }
-
-    console.log('Crosshair is not inside any label');
     return false;
+}
+
+function getLabelUnderPointer(pointerPos) {
+    let labels = labelLayer.find('Rect'); // Get all labels
+    return (
+        labels.find((label) => {
+            let box = label.getClientRect();
+            return pointerPos.x >= box.x && pointerPos.x <= box.x + box.width && pointerPos.y >= box.y && pointerPos.y <= box.y + box.height;
+        }) || null
+    );
 }
 
 class DragableItem {
@@ -345,21 +511,29 @@ class DragableItem {
                 border: '1px solid #000',
             })
             .addClass('draggable-item');
-        console.log('Creating');
         this.object = newDraggableDOM;
-        console.log(config);
-        this.config = config;
-        this.config.type = itemConfig.type;
-        this.config.subtype = itemConfig.subtype;
         this.itemConfig = itemConfig;
-        console.log(this.itemConfig);
+        this.config = config;
+        let reference = this;
 
         interact(this.object.get(0)).draggable({
             //this.* is no longer in the class object and is instead in the interact object
             listeners: {
+                start(event) {
+                    let shadow = new Konva.Rect({
+                        id: 'shadow',
+                        width: newDraggableDOM.get(0).offsetWidth,
+                        height: newDraggableDOM.get(0).offsetHeight,
+                        x: 0,
+                        y: 0,
+                        fill: 'rgba(255, 0, 0, 0.3)', // Semi-transparent shadow
+                        listening: false, // Disable events for the shadow object
+                        visible: false,
+                    });
+                    extraLayer1.add(shadow);
+                    extraLayer1.draw();
+                },
                 move(event) {
-                    console.log('applying move');
-                    console.log('moving');
                     window.isAddingObject = true;
                     const target = event.target;
                     const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
@@ -368,10 +542,35 @@ class DragableItem {
                     target.style.transform = `translate(${x}px, ${y}px)`;
                     target.setAttribute('data-x', x);
                     target.setAttribute('data-y', y);
+
+                    // shadow
+                    $('#innerEditorCanvas').css('cursor', 'crosshair');
+                    let shadow = extraLayer1.findOne('#shadow');
+                    const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
+                    const transform = stage.getAbsoluteTransform().copy().invert(); // Invert stage transformations
+                    // Convert pointer position to stage-local coordinates
+                    let stagePos;
+
+                    stagePos = transform.point({
+                        x: pointerPos.x,
+                        y: pointerPos.y,
+                    });
+
+                    if (shadow && x && y) {
+                        shadow.visible(true);
+                        extraLayer1.draw();
+                        shadow.x(stagePos.x);
+                        shadow.y(stagePos.y);
+                        shadow.to({
+                            duration: 0.1,
+                            fill: isCrosshairInLabel() ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)',
+                        });
+                    } else {
+                        shadow.visible(false);
+                    }
                 },
                 end(event) {
-                    console.log('applying end');
-                    console.log('stop');
+                    console.log('drag end');
                     window.isAddingObject = false;
                     let target = event.target;
                     const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
@@ -381,85 +580,29 @@ class DragableItem {
                         x: pointerPos.x,
                         y: pointerPos.y,
                     });
-                    const { x, y } = stagePos;
-                    console.log(isCrosshairInLabel());
+                    config.x = stagePos.x;
+                    config.y = stagePos.y;
                     try {
                         if (isCrosshairInLabel()) {
                             // Add the Konva item at the calculated position
-                            let item = new Item({ x, y }).render(labelLayer);
-                            item.render();
-                            // Example: Add visual feedback to the item container
-                            $('#itemContainer').prepend(this.object);
-                        } else {
-                            // return the item to its original position
-                            $('#itemContainer').prepend(this.object);
+                            let label = getLabelUnderPointer(pointerPos);
+                            console.log(label);
+                            config.label = label.attrs.id;
+                            let item = new Item({ ...config }).render(labelLayer);
                         }
                     } catch (e) {
                         console.error(e);
-                        target.remove();
                     }
+                    let shadow = extraLayer1.findOne('#shadow');
+                    shadow.remove();
+                    extraLayer1.draw();
+
+                    let clonedItem = new DragableItem(config);
+                    $('#itemContainer').append(clonedItem.getDraggableDOM());
                     target.remove();
                 },
             },
         });
-    }
-
-    drag() {
-        console.log('drag()');
-        if (window.isAddingObject) {
-            $('#innerEditorCanvas').css('cursor', 'crosshair');
-
-            // Create a temporary "shadow" object
-            let draggedObject = this.object;
-            const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
-            const transform = stage.getAbsoluteTransform().copy().invert(); // Invert stage transformations
-
-            // Convert pointer position to stage-local coordinates
-            const stagePos = transform.point({
-                x: pointerPos.x,
-                y: pointerPos.y,
-            });
-
-            const { x, y } = stagePos;
-
-            // Create the shadow Konva object
-            let shadow = new Konva.Rect({
-                width: draggedObject.offsetWidth,
-                height: draggedObject.offsetHeight,
-                x: x,
-                y: y,
-                fill: 'rgba(0, 0, 0, 0.3)', // Semi-transparent shadow
-                listening: false, // Disable events for the shadow object
-            });
-
-            objectLayer.add(shadow);
-            objectLayer.draw(); // Redraw the layer to show the shadow
-
-            // Listen for mousemove to make the object follow the cursor
-            stage.on('mousemove', (evt) => {
-                //if crosshair is within the label, show the preview.
-                if (!isCrosshairInLabel()) return;
-                const pointerPos = stage.getPointerPosition(); // Current pointer position
-                const localPos = stage.getAbsoluteTransform().copy().invert().point({
-                    x: pointerPos.x,
-                    y: pointerPos.y,
-                });
-
-                shadow.position({
-                    x: localPos.x,
-                    y: localPos.y,
-                });
-
-                objectLayer.batchDraw(); // Efficiently redraw only updated parts
-            });
-
-            // On mouseleave or mouseup, finalize or remove the shadow
-            $('#innerEditorCanvas').on('mouseleave mouseup', function () {
-                stage.off('mousemove'); // Remove mousemove listener
-                shadow.destroy(); // Remove the shadow object
-                objectLayer.draw(); // Update the layer
-            });
-        }
     }
     getDraggableDOM() {
         return this.object;
