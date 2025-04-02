@@ -115,7 +115,6 @@
          let testItem = new DragableItem(draggableTestConfig);
          console.log($('#itemContainer').length)
          $('#itemContainer').append(testItem.getDraggableDOM());
-         testItem.apply();
          $('#innerEditorCanvas').on('mouseover', function (e) {
             testItem.drag();
          })

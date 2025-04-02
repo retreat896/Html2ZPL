@@ -353,6 +353,55 @@ class DragableItem {
         this.config.subtype = itemConfig.subtype;
         this.itemConfig = itemConfig;
         console.log(this.itemConfig);
+
+        interact(this.object.get(0)).draggable({
+            //this.* is no longer in the class object and is instead in the interact object
+            listeners: {
+                move(event) {
+                    console.log('applying move');
+                    console.log('moving');
+                    window.isAddingObject = true;
+                    const target = event.target;
+                    const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                    const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+                    target.style.transform = `translate(${x}px, ${y}px)`;
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
+                },
+                end(event) {
+                    console.log('applying end');
+                    console.log('stop');
+                    window.isAddingObject = false;
+                    let target = event.target;
+                    const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
+                    const transform = stage.getAbsoluteTransform().copy().invert(); // Invert stage transformations
+                    // Convert pointer position to stage-local coordinates
+                    const stagePos = transform.point({
+                        x: pointerPos.x,
+                        y: pointerPos.y,
+                    });
+                    const { x, y } = stagePos;
+                    console.log(isCrosshairInLabel());
+                    try {
+                        if (isCrosshairInLabel()) {
+                            // Add the Konva item at the calculated position
+                            let item = new Item({ x, y }).render(labelLayer);
+                            item.render();
+                            // Example: Add visual feedback to the item container
+                            $('#itemContainer').prepend(this.object);
+                        } else {
+                            // return the item to its original position
+                            $('#itemContainer').prepend(this.object);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        target.remove();
+                    }
+                    target.remove();
+                },
+            },
+        });
     }
 
     drag() {
@@ -414,55 +463,5 @@ class DragableItem {
     }
     getDraggableDOM() {
         return this.object;
-    }
-    apply() {
-        console.log('applying');
-        interact(this.object.get(0)).draggable({
-            listeners: {
-                move(event) {
-                    console.log('applying move');
-                    console.log('moving');
-                    window.isAddingObject = true;
-                    const target = event.target;
-                    const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                    const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-
-                    target.style.transform = `translate(${x}px, ${y}px)`;
-                    target.setAttribute('data-x', x);
-                    target.setAttribute('data-y', y);
-                },
-                end(event) {
-                    console.log('applying end');
-                    console.log('stop');
-                    window.isAddingObject = false;
-                    let target = event.target;
-                    const pointerPos = stage.getPointerPosition(); // Pointer position on the stage
-                    const transform = stage.getAbsoluteTransform().copy().invert(); // Invert stage transformations
-                    // Convert pointer position to stage-local coordinates
-                    const stagePos = transform.point({
-                        x: pointerPos.x,
-                        y: pointerPos.y,
-                    });
-                    const { x, y } = stagePos;
-                    console.log(isCrosshairInLabel());
-                    try {
-                        if (isCrosshairInLabel()) {
-                            // Add the Konva item at the calculated position
-                            let item = new Item({ x, y }).render(labelLayer);
-                            item.render();
-                            // Example: Add visual feedback to the item container
-                            $('#itemContainer').prepend(this.object);
-                        } else {
-                            // return the item to its original position
-                            $('#itemContainer').prepend(this.object);
-                        }
-                    } catch (e) {
-                        console.error(e);
-                        target.remove();
-                    }
-                    target.remove();
-                },
-            },
-        });
     }
 }
