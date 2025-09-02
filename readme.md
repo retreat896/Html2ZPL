@@ -77,16 +77,79 @@ At the moment, this project is still under **active development** and may contai
 
 ---
 
-## 📁 Project Structure
+## 🚀 Getting Started
+
+### ☑️ Prerequisites
+
+Before getting started with krisDial, ensure your runtime environment meets the following requirements:
+
+-   **Programming Language:** HTML + Javascript
+-   **Package Manager:** Npm
+-   **Server Software:** Node 21+
+
+### ⚙️ Installation
+
+Install krisDial using one of the following methods:
+
+**Build from source:**
+
+1. Clone the krisDial repository:
 
 ```sh
-└── zpl-gui-editor-v2/
-    ├── index.html
-    ├── css/
-    │   └── styles.css
-    ├── js/
-    │   ├── app.js
-    │   └── editor.js
-    ├── assets/
-    │   └── icons/
-    └── docs/
+❯ git clone https://github.com/retreat896/Html2ZPL
+```
+
+2. Install the project dependencies:
+
+**Using `npm`** &nbsp; [<img align="center" src="" />]()
+
+```sh
+❯ npm install
+```
+
+### 🤖 Usage
+
+Start the node server: **Using `node run`** &nbsp; [<img align="center" src="" />]()
+
+```sh
+❯ node run
+```
+
+Using a Browser go to the page url: **Using `localhost`** &nbsp; [<img align="center" src="" />]()
+
+```sh
+❯ localhost:3000
+```
+
+---
+
+## 📌 Project Roadmap
+
+-   [x] **`The Begining`**: <strike>Implement a basic drag and drop label GUI </strike>
+-   [ ] **`Basic Item Creation`**: Implement some of the base label components such as text, graphic, and barcode.
+-   [ ] **`Basic Saving`**: Implement Label saving and item saving to "Cloud" using API
+-   [ ] **`Basic Export`**: Implement Exporting to ZPL code from HTML Dom
+-   [ ] **`Basic Import`**: Implement a way to import ZPL code into HTML
+-   [ ] **`UI Overhaul`**: Implement a flat modern style GUI for the application
+-   [ ] **`Advanced Saving`**: Implement a project manager to allow saving multiple label sets, sharing, and storage options.
+-   [ ] **`Advanced Items`**: Implements advanced items such as Images and possibly custom user items.
+-   [ ] **`Advanced Import`**: Allow users to import any ZPL code and it converts perfectly to a label
+
+---
+
+## 🔰 Contributing
+
+
+-   **🐛 [Report Issues](https://github.com/retreat896/Html2ZPL/issues)**: Submit bugs found or log feature requests for the `krisDial` project.
+-   **💡 [Submit Pull Requests](https://github.com/retreat896/Html2ZPL/blob/main/CONTRIBUTING.md)**: Review open PRs, and submit your own PRs.
+
+<h2>🛠️ Contributors</summary>
+<br>
+<p align="left">
+   <a href="https://github.com{/retreat896/krisDial/}graphs/contributors">
+      <img src="https://contrib.rocks/image?repo=retreat896/Html2ZPL">
+   </a>
+</p>
+
+
+---
