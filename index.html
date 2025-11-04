@@ -103,23 +103,17 @@
          if (localStorage.getItem("rightToggle") === "true") {
             $("#innerRight").addClass("collapse").removeClass("show");
          }
-         //on load testing
-         //create 1 label by default
-         for (let i = 0; i < 1; i++) {
-            let label = new Label(labelLayer, userLabelConfig);
-            label.render();
-         }
 
-         //create item draggable
-         let draggableTestConfig = { type: 'graphic', subtype: 'box' };
-         let testItem = new DragableItem(draggableTestConfig);
-         $('#itemContainer').append(testItem.getDraggableDOM());
+
+
+         
          
 
       });
 
 
    </script>
+   <script type="module" src="./scripts/debug.js"/>
    <div id="page">
       <!--  Navigation LOADED FROM MODULELOADER-->
 
