@@ -1,8 +1,8 @@
-# ZPL GUI Editor V2 ![Status: Development](https://img.shields.io/badge/Status-Development-blue?style=flat&logo=visualstudiocode&logoColor=white)
+# ZPL GUI Editor V2 ![Status: Development](https://img.shields.io/badge/Status-Development-yellow?style=flat&logo=visualstudiocode&logoColor=white)
 
-![Repo Last Commit](https://img.shields.io/github/last-commit/YOUR_USERNAME/zpl-gui-editor-v2?style=flat&logo=git&logoColor=white&color=0007d4)
-![GitHub contributors](https://img.shields.io/github/contributors/YOUR_USERNAME/zpl-gui-editor-v2?style=flat&color=blue)
-![Repo Language Count](https://img.shields.io/github/languages/count/YOUR_USERNAME/zpl-gui-editor-v2?style=flat&color=0007d4)
+![Repo Last Commit](https://img.shields.io/github/last-commit/retreat896/Html2ZPL?style=flat&logo=git&logoColor=white&color=0007d4)
+![GitHub contributors](https://img.shields.io/github/contributors/retreat896/Html2ZPL?style=flat&color=blue)
+![Repo Language Count](https://img.shields.io/github/languages/count/retreat896/Html2ZPL?style=flat&color=0007d4)
 
 ---
 
@@ -34,11 +34,9 @@
 
 ## 📍 Overview
 
-<code>
-ZPL GUI Editor V2 is a **work-in-progress web editor** for Zebra Programming Language (ZPL) labels.  
+<code>ZPL GUI Editor V2 is a **work-in-progress web editor** for Zebra Programming Language (ZPL) labels.  
 The goal is to emulate a "photo editor" experience for ZPL, allowing users to **design, preview, and export labels** visually.  
-At the moment, this project is still under **active development** and may contain bugs or incomplete features.
-</code>
+At the moment, this project is still under **active development** and may contain bugs or incomplete features.</code>
 
 ---
 
@@ -146,7 +144,7 @@ Using a Browser go to the page url: **Using `localhost`** &nbsp; [<img align="ce
 <h2>🛠️ Contributors</summary>
 <br>
 <p align="left">
-   <a href="https://github.com{/retreat896/krisDial/}graphs/contributors">
+   <a href="https://github.com{/retreat896/html2zpl/}graphs/contributors">
       <img src="https://contrib.rocks/image?repo=retreat896/Html2ZPL">
    </a>
 </p>
