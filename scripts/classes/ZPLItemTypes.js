@@ -90,25 +90,6 @@ export default class ItemTypes {
                 switch (subtype) {
                     case 'box':
                         console.log('Item "Graphic Box", Created');
-                            this.config = {
-                                x: config.x || 0,
-                                y: config.y || 0,
-                                width: config.width || 200,
-                                height: config.height || 50,
-                                fill: config.fill || '#fff',
-                                stroke: config.stroke || '#000',
-                                draggable: true,
-                            };
-
-                            this.shadowConfig = {
-                                ...this.config,
-                                fill: '#848484ff',
-                                stroke: null,
-                                draggable: false,
-                            }
-
-                            this.shadow = new Konva.Rect(this.shadowConfig)
-                            this.item = new Konva.Rect(this.config);
                         break;
                     case 'circle':
                         console.log('Graphic Circle.');
