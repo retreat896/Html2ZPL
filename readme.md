@@ -7,9 +7,9 @@
 ---
 
 ## 🧩 Built with:
-![Bootstrap](https://img.shields.io/badge/Bootstrap-7952B3.svg?style=flat&logo=Bootstrap&logoColor=white)
+![Pixi](https://img.shields.io/badge/Pixi-7952B3.svg?style=flat&logo=pixiv&logoColor=white)
 ![jQuery](https://img.shields.io/badge/jQuery-0769AD.svg?style=flat&logo=jquery&logoColor=white)
-![Popper.js](https://img.shields.io/badge/Popper.js-f7df1e?style=flat&logo=javascript&logoColor=black)
+![Font Awesome](https://img.shields.io/badge/Font%20Awesome-f7df1e?style=flat&logo=fontawesome&logoColor=black)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26.svg?style=flat&logo=HTML5&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E.svg?style=flat&logo=JavaScript&logoColor=black)
 
@@ -50,26 +50,26 @@ At the moment, this project is still under **active development** and may contai
 - Toggle preview modes (on-save / on-change)  
 
 ### 📦 Item Management
-![Status: Not Started](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
+![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
 - Dynamic item creation (multiple labels/items)  
 - Add, remove, and confirm deletion of items  
 - Item list rendering with selection & focus  
 
 ### 🔄 Import & Export
-![Status: Planned](https://img.shields.io/badge/Status-Planned-lightgrey?style=flat&logo=ipfs&logoColor=black)  
+![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
 - Import ZPL files (parse & render)  
 - Export labels to ZPL, PDF, PNG, etc.  
 - Support multiple file formats  
 
 ### 🖼 ZPL Elements
-![Status: Planned](https://img.shields.io/badge/Status-Planned-lightgrey?style=flat&logo=ipfs&logoColor=black)  
+![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
 - **Text**: render & edit text fields  
 - **Images**: render uploaded images  
 - **Barcodes**: render and handle input  
 - **Options**: configure ZPL element attributes  
 
 ### 💾 Saving & Loading
-![Status: Planned](https://img.shields.io/badge/Status-Planned-lightgrey?style=flat&logo=ipfs&logoColor=black)  
+![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
 - Local save & load (browser storage)  
 - Cloud save/load integration  
 
@@ -97,14 +97,6 @@ Install krisDial using one of the following methods:
 ❯ git clone https://github.com/retreat896/Html2ZPL
 ```
 
-2. Install the project dependencies:
-
-**Using `npm`** &nbsp; [<img align="center" src="" />]()
-
-```sh
-❯ npm install
-```
-
 ### 🤖 Usage
 
 Start the node server: **Using `node run`** &nbsp; [<img align="center" src="" />]()
@@ -123,7 +115,7 @@ Using a Browser go to the page url: **Using `localhost`** &nbsp; [<img align="ce
 
 ## 📌 Project Roadmap
 
--   [x] **`The Begining`**: <strike>Implement a basic drag and drop label GUI </strike>
+-   [ ] **`The Begining`**: <strike>Implement a basic drag and drop label GUI </strike>
 -   [ ] **`Basic Item Creation`**: Implement some of the base label components such as text, graphic, and barcode.
 -   [ ] **`Basic Saving`**: Implement Label saving and item saving to "Cloud" using API
 -   [ ] **`Basic Export`**: Implement Exporting to ZPL code from HTML Dom
