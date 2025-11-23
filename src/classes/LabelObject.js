@@ -35,4 +35,9 @@ export default class LabelObject {
         // For now, we might just return data for React to render
         return this.toJSON();
     }
+    // Abstract method to handle resizing
+    // Returns partial object with updated properties
+    resize(handle, delta, settings, initialProps) {
+        throw new Error('Method "resize" must be implemented.');
+    }
 }

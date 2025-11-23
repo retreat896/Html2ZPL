@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import TextObject from '../classes/items/TextObject';
+import ObjectRegistry from '../classes/ObjectRegistry';
 
 const ProjectContext = createContext();
 
@@ -28,7 +28,10 @@ export const ProjectProvider = ({ children }) => {
     const [selectedObjectId, setSelectedObjectId] = useState(null);
     const [editorSettings, setEditorSettings] = useState({
         confineToLabel: true,
-        bleed: 0 // Pixels of bleed allowed beyond label boundaries (can be negative for inset)
+        bleed: 0, // Pixels of bleed allowed beyond label boundaries (can be negative for inset)
+        showGrid: true,
+        snapToGrid: true,
+        gridSize: 10 // Pixels
     });
 
     const activeLabel = project.labels.find(l => l.id === activeLabelId);
@@ -60,17 +63,14 @@ export const ProjectProvider = ({ children }) => {
     const addObject = (type) => {
         if (!activeLabel) return;
 
-        let newObj;
-        const defaultProps = { x: 50, y: 50 };
-
-        switch (type) {
-            case 'text':
-                newObj = new TextObject({ ...defaultProps, text: 'New Text' });
-                break;
-            // Add other types here
-            default:
-                return;
+        const definition = ObjectRegistry.get(type);
+        if (!definition) {
+            console.error(`Unknown object type: ${type}`);
+            return;
         }
+
+        const defaultProps = { x: 50, y: 50 };
+        const newObj = new definition.class(defaultProps);
 
         const updatedLabels = project.labels.map(label => {
             if (label.id === activeLabelId) {
@@ -111,6 +111,62 @@ export const ProjectProvider = ({ children }) => {
         setProject({ ...project, labels: updatedLabels });
     };
 
+    const generateZPL = (labelId) => {
+        const label = project.labels.find(l => l.id === labelId);
+        if (!label) return '';
+
+        const { width, height, dpmm, unit } = label.settings;
+        
+        // Calculate print width/height in dots
+        const printWidth = Math.round(width * 25.4 * dpmm);
+        const labelLength = Math.round(height * 25.4 * dpmm);
+        
+        // Display uses 100 DPI, printer uses actual dpmm
+        // Calculate conversion ratio: printer dots per display pixel
+        const DISPLAY_DPI = 100;
+        const displayPixelsPerUnit = unit === 'inch' ? DISPLAY_DPI : (DISPLAY_DPI / 25.4);
+        const printerDotsPerUnit = unit === 'inch' ? (25.4 * dpmm) : dpmm;
+        const conversionRatio = printerDotsPerUnit / displayPixelsPerUnit;
+
+        let zpl = `^XA\n^PW${printWidth}\n^LL${labelLength}\n^PON\n`;
+
+        label.objects.forEach(obj => {
+            const def = ObjectRegistry.get(obj.type);
+            if (def && def.class) {
+                // Create a copy with coordinates converted to printer dots
+                const convertedObj = { ...obj };
+                
+                // Convert positions
+                if (typeof convertedObj.x === 'number') {
+                    convertedObj.x = Math.round(convertedObj.x * conversionRatio);
+                }
+                if (typeof convertedObj.y === 'number') {
+                    convertedObj.y = Math.round(convertedObj.y * conversionRatio);
+                }
+                
+                // Convert dimensions
+                if (typeof convertedObj.width === 'number') {
+                    convertedObj.width = Math.round(convertedObj.width * conversionRatio);
+                }
+                if (typeof convertedObj.height === 'number') {
+                    convertedObj.height = Math.round(convertedObj.height * conversionRatio);
+                }
+                
+                // Convert font size (approximate - may need adjustment)
+                if (typeof convertedObj.fontSize === 'number') {
+                    convertedObj.fontSize = Math.round(convertedObj.fontSize * conversionRatio);
+                }
+                
+                const instance = new def.class(convertedObj);
+                Object.assign(instance, convertedObj);
+                zpl += instance.toZPL() + '\n';
+            }
+        });
+
+        zpl += '^XZ';
+        return zpl;
+    };
+
     return (
         <ProjectContext.Provider value={{ 
             project, 
@@ -126,7 +182,8 @@ export const ProjectProvider = ({ children }) => {
             deleteLabel,
             addObject,
             updateObject,
-            updateLabelSettings
+            updateLabelSettings,
+            generateZPL
         }}>
             {children}
         </ProjectContext.Provider>

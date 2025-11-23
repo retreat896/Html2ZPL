@@ -49,20 +49,24 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           {/* Labels Section */}
           <div className="space-y-1 mb-4">
             <div 
-                className="flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
+                className="flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                 onClick={() => setIsLabelsOpen(!isLabelsOpen)}
             >
                 <span className={clsx("transition-all whitespace-nowrap", !isOpen && "lg:opacity-0 lg:hidden")}>Labels</span>
-                {isOpen && <i className={clsx("fa-solid transition-transform", isLabelsOpen ? "fa-chevron-down" : "fa-chevron-right")}></i>}
+                {isOpen && <i className={clsx("fa-solid transition-transform duration-200", isLabelsOpen ? "fa-chevron-down" : "fa-chevron-right")}></i>}
             </div>
             
-            {isLabelsOpen && isOpen && (
+            <div className={clsx(
+              "overflow-hidden transition-all duration-300 ease-in-out",
+              isLabelsOpen && isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            )}>
+              {isOpen && (
                 <div className="space-y-1 mt-1">
                     {project.labels.map(label => (
                         <div 
                             key={label.id}
                             className={clsx(
-                                "group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm",
+                                "group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm transition-all duration-200",
                                 activeLabelId === label.id 
                                     ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" 
                                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -75,7 +79,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                             </div>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); deleteLabel(label.id); }}
-                                className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-opacity"
+                                className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-opacity duration-200"
                                 title="Delete Label"
                             >
                                 <i className="fa-solid fa-trash text-xs"></i>
@@ -85,13 +89,14 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                     
                     <button 
                         onClick={addLabel}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
                     >
                         <i className="fa-solid fa-plus"></i>
                         <span>New Label</span>
                     </button>
                 </div>
-            )}
+              )}
+            </div>
           </div>
 
           <NavItem icon="fa-house" label="Home" active isOpen={isOpen} />

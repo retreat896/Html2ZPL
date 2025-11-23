@@ -7,8 +7,9 @@
 ---
 
 ## 🧩 Built with:
-![Pixi](https://img.shields.io/badge/Pixi-7952B3.svg?style=flat&logo=pixiv&logoColor=white)
-![jQuery](https://img.shields.io/badge/jQuery-0769AD.svg?style=flat&logo=jquery&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
 ![Font Awesome](https://img.shields.io/badge/Font%20Awesome-f7df1e?style=flat&logo=fontawesome&logoColor=black)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26.svg?style=flat&logo=HTML5&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E.svg?style=flat&logo=JavaScript&logoColor=black)
@@ -19,16 +20,12 @@
 
 -   [📍 Overview](#-overview)
 -   [👾 Features](#-features)
--   [📁 Project Structure](#-project-structure)
-    -   [📂 Project Index](#-project-index)
 -   [🚀 Getting Started](#-getting-started)
     -   [☑️ Prerequisites](#-prerequisites)
     -   [⚙️ Installation](#-installation)
-    -   [🤖 Usage](#🤖-usage)
+    -   [🤖 Usage](#-usage)
 -   [📌 Project Roadmap](#-project-roadmap)
 -   [🔰 Contributing](#-contributing)
--   [🎗 License](#-license)
--   [🙌 Acknowledgments](#-acknowledgments)
 
 ---
 
@@ -36,40 +33,41 @@
 
 <code>ZPL GUI Editor V2 is a **work-in-progress web editor** for Zebra Programming Language (ZPL) labels.  
 The goal is to emulate a "photo editor" experience for ZPL, allowing users to **design, preview, and export labels** visually.  
-At the moment, this project is still under **active development** and may contain bugs or incomplete features.</code>
+At the moment, this project is still under **active development** and **WILL** contain bugs or incomplete features.</code>
 
 ---
 
 ## 👾 Features
 
 ### 📝 Label Editor
-![Status: WIP](https://img.shields.io/badge/Status-WIP-yellow?style=flat&logo=ipfs&logoColor=white)  
+![Status: In Development](https://img.shields.io/badge/Status-In_Development-orange?style=flat&logo=tools&logoColor=white)  
 - Add and position labels on a canvas  
 - Edit label properties: size, position, options  
 - Live label preview with update on change  
 - Toggle preview modes (on-save / on-change)  
 
 ### 📦 Item Management
-![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
-- Dynamic item creation (multiple labels/items)  
+![Status: WIP](https://img.shields.io/badge/Status-WIP-yellow?style=flat&logo=clock&logoColor=white)  
+- Dynamic item creation (multiple items)  
 - Add, remove, and confirm deletion of items  
-- Item list rendering with selection & focus  
+- Item selection & focus  
 
 ### 🔄 Import & Export
-![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
+![Status: WIP](https://img.shields.io/badge/Status-WIP-yellow?style=flat&logo=clock&logoColor=white)  
 - Import ZPL files (parse & render)  
-- Export labels to ZPL, PDF, PNG, etc.  
+- Export labels to ZPL (Preview implemented)  
 - Support multiple file formats  
 
 ### 🖼 ZPL Elements
-![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
-- **Text**: render & edit text fields  
+![Status: WIP](https://img.shields.io/badge/Status-WIP-yellow?style=flat&logo=clock&logoColor=white)  
+- **Text**: render & edit text fields (Implemented)  
+- **Graphics**: render & edit shapes (Implemented)
 - **Images**: render uploaded images  
 - **Barcodes**: render and handle input  
 - **Options**: configure ZPL element attributes  
 
 ### 💾 Saving & Loading
-![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=ipfs&logoColor=white)  
+![Status: Planned](https://img.shields.io/badge/Status-Not_Started-red?style=flat&logo=times&logoColor=white)  
 - Local save & load (browser storage)  
 - Cloud save/load integration  
 
@@ -79,36 +77,51 @@ At the moment, this project is still under **active development** and may contai
 
 ### ☑️ Prerequisites
 
-Before getting started with krisDial, ensure your runtime environment meets the following requirements:
+Before getting started with Html2ZPL, ensure your runtime environment meets the following requirements:
 
--   **Programming Language:** HTML + Javascript
--   **Package Manager:** Npm
 -   **Server Software:** Node 21+
 
 ### ⚙️ Installation
 
-Install krisDial using one of the following methods:
+1. **Clone the repository:**
 
-**Build from source:**
+   ```sh
+   git clone https://github.com/retreat896/Html2ZPL.git
+   cd Html2ZPL
+   ```
 
-1. Clone the krisDial repository:
+2. **Install dependencies:**
 
-```sh
-❯ git clone https://github.com/retreat896/Html2ZPL
-```
+   Navigate to the project directory and run:
+
+   ```sh
+   npm install
+   ```
 
 ### 🤖 Usage
 
-Start the node server: **Using `node run`** &nbsp; [<img align="center" src="" />]()
+**Development Server:**
+
+To start the development server with hot-reload:
 
 ```sh
-❯ node run
+npm run dev
 ```
 
-Using a Browser go to the page url: **Using `localhost`** &nbsp; [<img align="center" src="" />]()
+The terminal will show a local URL (typically `http://localhost:5173`). Open this URL in your browser to start using the editor.
+
+**Building for Production:**
+
+To create an optimized production build:
 
 ```sh
-❯ localhost:3000
+npm run build
+```
+
+The built files will be in the `dist` directory. You can preview the production build locally using:
+
+```sh
+npm run preview
 ```
 
 ---
@@ -130,13 +143,13 @@ Using a Browser go to the page url: **Using `localhost`** &nbsp; [<img align="ce
 ## 🔰 Contributing
 
 
--   **🐛 [Report Issues](https://github.com/retreat896/Html2ZPL/issues)**: Submit bugs found or log feature requests for the `krisDial` project.
+-   **🐛 [Report Issues](https://github.com/retreat896/Html2ZPL/issues)**: Submit bugs found or log feature requests for the `Html2ZPL` project.
 -   **💡 [Submit Pull Requests](https://github.com/retreat896/Html2ZPL/blob/main/CONTRIBUTING.md)**: Review open PRs, and submit your own PRs.
 
 <h2>🛠️ Contributors</summary>
 <br>
 <p align="left">
-   <a href="https://github.com{/retreat896/html2zpl/}graphs/contributors">
+   <a href="https://github.com/retreat896/Html2ZPL/graphs/contributors">
       <img src="https://contrib.rocks/image?repo=retreat896/Html2ZPL">
    </a>
 </p>

@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
 import { useProject } from '../context/ProjectContext';
-import { DPI_SCREEN } from '../constants/labelSizes';
+import ObjectRegistry from '../classes/ObjectRegistry';
+
+import { DISPLAY_DPI } from '../constants/editor';
 
 export default function Editor() {
   const { activeLabel, addObject, selectedObjectId, setSelectedObjectId, updateObject, editorSettings, setEditorSettings } = useProject();
@@ -18,27 +20,85 @@ export default function Editor() {
   const [objStartPos, setObjStartPos] = useState({ x: 0, y: 0 });
   const [objDimensions, setObjDimensions] = useState({ width: 0, height: 0 });
 
+  // Object Resizing State
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState(null); // 'tl' or 'br'
+  const [resizeStartPos, setResizeStartPos] = useState({ x: 0, y: 0 });
+  const [initialObjProps, setInitialObjProps] = useState(null);
+
   // Settings Menu State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const canvasContainerRef = useRef(null);
 
-  // Handle Zoom
-  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.1, 3));
-  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.1, 0.5));
-
-  // Calculate Label Dimensions in Pixels
+  // Calculate Label Dimensions in Pixels (using fixed 100 DPI for display)
+  // DISPLAY_DPI imported from constants
+  
   const getLabelDimensions = () => {
     if (!activeLabel) return { width: 0, height: 0 };
     const { width, height, unit } = activeLabel.settings;
-    const pixelsPerUnit = unit === 'inch' ? DPI_SCREEN : (DPI_SCREEN / 25.4);
+    
+    // Always render at 100 px/inch for consistent display
+    const pixelsPerUnit = unit === 'inch' ? DISPLAY_DPI : (DISPLAY_DPI / 25.4);
+    
     return {
-      width: width * pixelsPerUnit,
-      height: height * pixelsPerUnit
+      width: Math.round(width * pixelsPerUnit),
+      height: Math.round(height * pixelsPerUnit)
     };
   };
 
   const labelDim = getLabelDimensions();
+
+  // Reset view when label size changes (fit to screen at 100%)
+  useEffect(() => {
+    if (canvasContainerRef.current && labelDim.width > 0 && labelDim.height > 0) {
+        const containerRect = canvasContainerRef.current.getBoundingClientRect();
+        const padding = 40;
+        
+        const availableWidth = containerRect.width - padding * 2;
+        const availableHeight = containerRect.height - padding * 2;
+        
+        const scaleX = availableWidth / labelDim.width;
+        const scaleY = availableHeight / labelDim.height;
+        
+        const fitZoom = Math.min(scaleX, scaleY, 1); // Don't zoom in past 100%
+
+        setZoomLevel(fitZoom);
+        setPanOffset({ x: 0, y: 0 });
+    }
+  }, [labelDim.width, labelDim.height]);
+
+  // Handle Zoom
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.1, 3));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.1, 0.1));
+
+  const handleWheel = (e) => {
+    const delta = -Math.sign(e.deltaY) * 0.1;
+    const newZoom = Math.min(Math.max(zoomLevel + delta, 0.1), 3);
+    
+    if (newZoom !== zoomLevel && canvasContainerRef.current) {
+        const rect = canvasContainerRef.current.getBoundingClientRect();
+        const containerCenterX = rect.width / 2;
+        const containerCenterY = rect.height / 2;
+        
+        const mouseX = e.clientX - rect.left - containerCenterX;
+        const mouseY = e.clientY - rect.top - containerCenterY;
+        
+        const scaleRatio = newZoom / zoomLevel;
+        
+        setPanOffset(prev => ({
+            x: prev.x * scaleRatio + mouseX * (1 - scaleRatio),
+            y: prev.y * scaleRatio + mouseY * (1 - scaleRatio)
+        }));
+        
+        setZoomLevel(newZoom);
+    }
+  };
+
+  // --- Grid Helper ---
+  const snapToGrid = (value, gridSize) => {
+    return Math.round(value / gridSize) * gridSize;
+  };
 
   // --- Mouse Event Handlers ---
 
@@ -58,16 +118,96 @@ export default function Editor() {
     const rect = element.getBoundingClientRect();
     
     // Store dimensions (accounting for zoom)
-    setObjDimensions({ 
-      width: rect.width / zoomLevel, 
-      height: rect.height / zoomLevel 
-    });
+    const width = rect.width / zoomLevel;
+    const height = rect.height / zoomLevel;
+
+    setObjDimensions({ width, height });
+    
+    // Update object state with current dimensions (useful for validation)
+    // We only do this if the dimensions are significantly different to avoid spam
+    if (Math.abs((objDimensions.width || 0) - width) > 1 || Math.abs((objDimensions.height || 0) - height) > 1) {
+        updateObject(objId, { width, height });
+    }
     
     setSelectedObjectId(objId);
     setIsDraggingObj(true);
     setDragStartPos({ x: e.clientX, y: e.clientY });
     setObjStartPos({ x: currentX, y: currentY });
   };
+
+  const handleResizeMouseDown = (e, handle, obj) => {
+    e.stopPropagation();
+    setIsResizing(true);
+    setResizeHandle(handle);
+    setResizeStartPos({ x: e.clientX, y: e.clientY });
+    
+    // Capture initial properties needed for resizing
+    const element = e.currentTarget.parentElement; // The object container
+    const rect = element.getBoundingClientRect();
+    
+    setInitialObjProps({
+        x: obj.x,
+        y: obj.y,
+        width: obj.width || 0,
+        height: obj.height || 0,
+        fontSize: obj.fontSize || 0,
+        domWidth: rect.width / zoomLevel,
+        domHeight: rect.height / zoomLevel
+    });
+  };
+
+  // ResizeObserver to keep object dimensions up to date in state
+  useEffect(() => {
+    if (!selectedObjectId || !canvasContainerRef.current) return;
+
+    // Find the DOM element for the selected object
+    // We can't easily use a ref for dynamic list, so we query selector
+    // We added a specific class or ID? No, but we can find by data attribute if we add one,
+    // or just rely on the fact that we render them.
+    // Let's add a data-id to the object container in the render loop.
+    const element = canvasContainerRef.current.querySelector(`[data-object-id="${selectedObjectId}"]`);
+    
+    if (element) {
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const { width: domWidth, height: domHeight } = entry.contentRect;
+                // contentRect doesn't include border/padding? 
+                // getBoundingClientRect is better for outer size including border
+                const rect = element.getBoundingClientRect();
+                const width = rect.width / zoomLevel;
+                const height = rect.height / zoomLevel;
+                
+                setObjDimensions({ width, height });
+                
+                // Update global state if significantly different
+                // We need to be careful not to cause infinite loops if updateObject triggers re-render -> resize -> updateObject
+                // But updateObject only changes props. If props change size, it stabilizes.
+                // We check against the *current* object state from activeLabel to see if update is needed.
+                const currentObj = activeLabel.objects.find(o => o.id === selectedObjectId);
+                if (currentObj) {
+                    const diffW = Math.abs((currentObj.width || 0) - width);
+                    const diffH = Math.abs((currentObj.height || 0) - height);
+                    
+                    if (diffW > 1 || diffH > 1) {
+                        // Debounce or just update?
+                        // React state updates are batched usually.
+                        // Let's update.
+                        updateObject(selectedObjectId, { width, height });
+                    }
+                }
+            }
+        });
+        
+        observer.observe(element);
+        return () => observer.disconnect();
+    }
+  }, [selectedObjectId, zoomLevel, activeLabel]); // activeLabel dependency might be too heavy? 
+  // If activeLabel changes, we re-run. If updateObject changes activeLabel, we re-run.
+  // This loop is dangerous. 
+  // We should NOT depend on activeLabel for the observer setup, but we need it for the check.
+  // Better: Use a ref to hold the current activeLabel or objects to avoid re-running effect?
+  // Or just trust that if size matches, we don't call updateObject, so no change, no re-render loop.
+
 
   const handleMouseMove = (e) => {
     if (isPanning) {
@@ -82,16 +222,16 @@ export default function Editor() {
       let newX = objStartPos.x + dx;
       let newY = objStartPos.y + dy;
 
+      if (editorSettings.snapToGrid) {
+        newX = snapToGrid(newX, editorSettings.gridSize);
+        newY = snapToGrid(newY, editorSettings.gridSize);
+      }
+
       if (editorSettings.confineToLabel) {
-        // Use the actual DOM dimensions captured at drag start
         const objWidth = objDimensions.width;
         const objHeight = objDimensions.height;
-
-        // Apply bleed: positive bleed allows objects to extend beyond boundaries
-        // Negative bleed creates an inset (more restrictive boundary)
         const bleed = editorSettings.bleed || 0;
 
-        // Clamp position so the object stays within the label + bleed
         newX = Math.max(-bleed, Math.min(newX, labelDim.width + bleed - objWidth));
         newY = Math.max(-bleed, Math.min(newY, labelDim.height + bleed - objHeight));
       }
@@ -100,12 +240,50 @@ export default function Editor() {
         x: newX,
         y: newY
       });
+    } else if (isResizing && selectedObjectId && initialObjProps) {
+        const dx = (e.clientX - resizeStartPos.x) / zoomLevel;
+        const dy = (e.clientY - resizeStartPos.y) / zoomLevel;
+        
+        // We need the class instance to call resize
+        // Currently activeLabel.objects contains plain objects (JSON)
+        // We need to get the class definition from registry and instantiate or call static
+        // But wait, the registry has the class.
+        const objState = activeLabel.objects.find(o => o.id === selectedObjectId);
+        if (!objState) return;
+
+        const def = ObjectRegistry.get(objState.type);
+        if (def && def.class) {
+            // Instantiate to access the method (or make it static, but instance is better for state access if needed)
+            const instance = new def.class(objState);
+            
+            const settings = {
+                snapToGrid: editorSettings.snapToGrid,
+                gridSize: editorSettings.gridSize,
+                confineToLabel: editorSettings.confineToLabel,
+                bleed: editorSettings.bleed || 0,
+                labelDim
+            };
+
+            const delta = { dx, dy };
+            
+            try {
+                // console.log('Resizing:', objState.type, handle, delta, initialObjProps);
+                const newProps = instance.resize(resizeHandle, delta, settings, initialObjProps);
+                // console.log('New Props:', newProps);
+                updateObject(selectedObjectId, newProps);
+            } catch (err) {
+                console.warn("Resize not implemented for this object type", err);
+            }
+        }
     }
   };
 
   const handleMouseUp = () => {
     setIsPanning(false);
     setIsDraggingObj(false);
+    setIsResizing(false);
+    setResizeHandle(null);
+    setInitialObjProps(null);
   };
 
   return (
@@ -128,7 +306,11 @@ export default function Editor() {
               <line x1="12" y1="4" x2="12" y2="20"></line>
             </svg>
           </button>
-          <button className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white" title="Shape Tool">
+          <button 
+            onClick={() => addObject('graphic')}
+            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white" 
+            title="Shape Tool"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
             </svg>
@@ -145,7 +327,7 @@ export default function Editor() {
           </button>
           
           {isSettingsOpen && (
-            <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-50 space-y-3">
+            <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-50 space-y-3">
                 <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                     <input 
                         type="checkbox" 
@@ -169,11 +351,44 @@ export default function Editor() {
                             placeholder="0"
                             step="1"
                         />
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Positive: allow overhang. Negative: create inset.
-                        </p>
                     </div>
                 )}
+
+                <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+                <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        checked={editorSettings.showGrid}
+                        onChange={(e) => setEditorSettings({ ...editorSettings, showGrid: e.target.checked })}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-200">Show Grid</span>
+                </label>
+
+                <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        checked={editorSettings.snapToGrid}
+                        onChange={(e) => setEditorSettings({ ...editorSettings, snapToGrid: e.target.checked })}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-200">Snap to Grid</span>
+                </label>
+
+                <div className="px-2 space-y-1">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                        Grid Size (px)
+                    </label>
+                    <input 
+                        type="number" 
+                        value={editorSettings.gridSize || 10}
+                        onChange={(e) => setEditorSettings({ ...editorSettings, gridSize: Math.max(1, parseInt(e.target.value) || 10) })}
+                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        min="1"
+                        step="1"
+                    />
+                </div>
             </div>
           )}
 
@@ -198,6 +413,7 @@ export default function Editor() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
         ref={canvasContainerRef}
       >
         <div 
@@ -218,18 +434,55 @@ export default function Editor() {
                     height: labelDim.height,
                 }}
             >
+                {/* Grid Overlay */}
+                {editorSettings.showGrid && (
+                    <div 
+                        className="absolute inset-0 pointer-events-none z-0"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='${editorSettings.gridSize}' height='${editorSettings.gridSize}' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M ${editorSettings.gridSize} 0 L 0 0 0 ${editorSettings.gridSize}' fill='none' stroke='rgba(0,0,0,0.1)' stroke-width='1'/%3E%3C/svg%3E")`,
+                            backgroundSize: `${editorSettings.gridSize}px ${editorSettings.gridSize}px`
+                        }}
+                    />
+                )}
+
                  {activeLabel?.objects.map(obj => (
                     <div 
                         key={obj.id}
-                        className={`absolute border cursor-move hover:border-blue-600 ${selectedObjectId === obj.id ? 'border-blue-600 ring-1 ring-blue-600' : 'border-transparent'}`}
+                        data-object-id={obj.id}
+                        className={`absolute border cursor-move hover:border-blue-600 ${selectedObjectId === obj.id ? 'border-blue-600 ring-1 ring-blue-600' : 'border-transparent'} z-10`}
                         style={{ 
                             left: obj.x, 
                             top: obj.y
                         }}
                         onMouseDown={(e) => handleObjectMouseDown(e, obj.id, obj.x, obj.y)}
                     >
-                        {obj.type === 'text' && <span className="text-black whitespace-nowrap select-none inline-block px-1 py-0.5" style={{ fontSize: obj.fontSize }}>{obj.text}</span>}
-                        {obj.type !== 'text' && <span className="text-xs text-gray-500 select-none inline-block px-1 py-0.5">{obj.type}</span>}
+                        {(() => {
+                            const def = ObjectRegistry.get(obj.type);
+                            const Component = def?.Component;
+                            return Component ? (
+                                <Component object={obj} />
+                            ) : (
+                                <span className="text-xs text-gray-500 select-none inline-block px-1 py-0.5">Unknown: {obj.type}</span>
+                            );
+                        })()}
+                        
+                        {/* Resize Handles */}
+                        {selectedObjectId === obj.id && (
+                            <>
+                                {/* Top-Left Handle */}
+                                <div 
+                                    className="absolute w-3 h-3 bg-white border border-blue-600 rounded-full cursor-nwse-resize z-50"
+                                    style={{ top: -5, left: -5 }}
+                                    onMouseDown={(e) => handleResizeMouseDown(e, 'tl', obj)}
+                                />
+                                {/* Bottom-Right Handle */}
+                                <div 
+                                    className="absolute w-3 h-3 bg-white border border-blue-600 rounded-full cursor-nwse-resize z-50"
+                                    style={{ bottom: -5, right: -5 }}
+                                    onMouseDown={(e) => handleResizeMouseDown(e, 'br', obj)}
+                                />
+                            </>
+                        )}
                     </div>
                  ))}
             </div>
