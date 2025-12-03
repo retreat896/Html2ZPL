@@ -4,9 +4,11 @@ import { useProject } from '../context/ProjectContext';
 import ObjectRegistry from '../classes/ObjectRegistry';
 
 import { DISPLAY_DPI } from '../constants/editor';
+import { zplToBase64Async } from 'zpl-renderer-js';
+import { getLabelDimensionsInDots } from '../utils/zplMath';
 
 export default function Editor() {
-  const { activeLabel, addObject, selectedObjectId, setSelectedObjectId, updateObject, editorSettings, setEditorSettings } = useProject();
+  const { activeLabel, activeLabelId, addObject, selectedObjectId, setSelectedObjectId, updateObject, editorSettings, setEditorSettings, generateZPL } = useProject();
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   
@@ -26,6 +28,9 @@ export default function Editor() {
   const [resizeStartPos, setResizeStartPos] = useState({ x: 0, y: 0 });
   const [initialObjProps, setInitialObjProps] = useState(null);
 
+  // Preview State
+  const [previewImage, setPreviewImage] = useState(null);
+
   // Settings Menu State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -36,14 +41,21 @@ export default function Editor() {
   
   const getLabelDimensions = () => {
     if (!activeLabel) return { width: 0, height: 0 };
-    const { width, height, unit } = activeLabel.settings;
+    const { width, height, unit, dpmm } = activeLabel.settings;
     
-    // Always render at 100 px/inch for consistent display
-    const pixelsPerUnit = unit === 'inch' ? DISPLAY_DPI : (DISPLAY_DPI / 25.4);
+    // Calculate ZPL dimensions first to ensure aspect ratio matches exactly
+    const { width: zplWidth, height: zplHeight } = getLabelDimensionsInDots(width, height, dpmm, unit);
+    
+    // Calculate scale factor to fit ZPL dots into Display DPI
+    // ZPL dots / Printer DPI = Inches
+    // Inches * Display DPI = Display Pixels
+    
+    const printerDotsPerUnit = unit === 'inch' ? (25.4 * dpmm) : dpmm;
+    const scale = DISPLAY_DPI / printerDotsPerUnit;
     
     return {
-      width: Math.round(width * pixelsPerUnit),
-      height: Math.round(height * pixelsPerUnit)
+      width: Math.round(zplWidth * scale),
+      height: Math.round(zplHeight * scale)
     };
   };
 
@@ -189,10 +201,12 @@ export default function Editor() {
                     const diffH = Math.abs((currentObj.height || 0) - height);
                     
                     if (diffW > 1 || diffH > 1) {
-                        // Debounce or just update?
-                        // React state updates are batched usually.
-                        // Let's update.
-                        updateObject(selectedObjectId, { width, height });
+                        // Only update state for objects that auto-resize (like text)
+                        // Fixed-size objects (graphics) should not be updated by DOM changes
+                        // to prevent zoom-induced resizing loops.
+                        if (currentObj.type === 'text') {
+                            updateObject(selectedObjectId, { width, height });
+                        }
                     }
                 }
             }
@@ -285,6 +299,51 @@ export default function Editor() {
     setResizeHandle(null);
     setInitialObjProps(null);
   };
+
+  // Keep handlers fresh for event listeners without re-binding
+  const handlersRef = useRef({ move: handleMouseMove, up: handleMouseUp });
+  useEffect(() => { handlersRef.current = { move: handleMouseMove, up: handleMouseUp }; });
+
+  // Global Event Listeners for Dragging/Resizing
+  useEffect(() => {
+    if (isPanning || isDraggingObj || isResizing) {
+        const onMove = (e) => handlersRef.current.move(e);
+        const onUp = (e) => handlersRef.current.up(e);
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }
+  }, [isPanning, isDraggingObj, isResizing]);
+
+  // Update Preview on Interaction End
+  useEffect(() => {
+    if (!activeLabelId || isDraggingObj || isResizing) return;
+
+    const updatePreview = async () => {
+        try {
+            const zpl = generateZPL(activeLabelId);
+            if (zpl && zpl.trim().length > 0) {
+                const { width, height, unit, dpmm } = activeLabel.settings;
+                const widthMm = unit === 'inch' ? width * 25.4 : width;
+                const heightMm = unit === 'inch' ? height * 25.4 : height;
+
+                const png = await zplToBase64Async(zpl, widthMm, heightMm, dpmm);
+                if (png) {
+                    setPreviewImage(png.startsWith('data:') ? png : `data:image/png;base64,${png}`);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to update preview:", err);
+        }
+    };
+
+    const timeoutId = setTimeout(updatePreview, 500); // Debounce slightly
+    return () => clearTimeout(timeoutId);
+  }, [activeLabelId, activeLabel, isDraggingObj, isResizing, generateZPL]); // activeLabel changes on updateObject
 
   return (
     <main className="flex-1 flex flex-col overflow-hidden">
@@ -410,9 +469,7 @@ export default function Editor() {
       <div 
         className="flex-1 overflow-hidden bg-gray-200 dark:bg-gray-900 relative cursor-grab active:cursor-grabbing"
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        // onMouseMove handled globally during drag
         onWheel={handleWheel}
         ref={canvasContainerRef}
       >
@@ -434,6 +491,16 @@ export default function Editor() {
                     height: labelDim.height,
                 }}
             >
+                {/* ZPL Preview Layer (Behind Grid) */}
+                {previewImage && (
+                    <img 
+                        src={previewImage} 
+                        alt="ZPL Preview" 
+                        className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-0 opacity-50"
+                        draggable={false}
+                    />
+                )}
+
                 {/* Grid Overlay */}
                 {editorSettings.showGrid && (
                     <div 
@@ -449,7 +516,7 @@ export default function Editor() {
                     <div 
                         key={obj.id}
                         data-object-id={obj.id}
-                        className={`absolute border cursor-move hover:border-blue-600 ${selectedObjectId === obj.id ? 'border-blue-600 ring-1 ring-blue-600' : 'border-transparent'} z-10`}
+                        className={`absolute cursor-move hover:ring-1 hover:ring-blue-600 ${selectedObjectId === obj.id ? 'ring-1 ring-blue-600' : ''} z-10`}
                         style={{ 
                             left: obj.x, 
                             top: obj.y

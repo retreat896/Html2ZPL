@@ -1,4 +1,5 @@
 import LabelObject from '../LabelObject';
+import { snap } from '../../utils/resizeUtils';
 
 export default class TextObject extends LabelObject {
     constructor(props = {}) {
@@ -11,8 +12,9 @@ export default class TextObject extends LabelObject {
 
     toZPL() {
         // ^FOx,y^Afont,orientation,height,width^FDdata^FS
+        // Use 0 for width to allow proportional scaling
         return `^FX Text Object ID: ${this.id}
-^FO${this.x},${this.y}^A${this.font}${this.orientation},${this.fontSize},${this.fontSize}^FD${this.text}^FS`;
+^FO${this.x},${this.y}^A${this.font}${this.orientation},${this.fontSize}^FD${this.text}^FS`;
     }
 
     getProps() {
@@ -32,8 +34,9 @@ export default class TextObject extends LabelObject {
         let scaleFactor = 1;
 
         // Fixed padding values from TextComponent (px-1 = 4px, py-0.5 = 2px)
-        const PAD_W = 8; // 4px left + 4px right
-        const PAD_H = 4; // 2px top + 2px bottom
+        // Fixed padding values from TextComponent (now 0)
+        const PAD_W = 0; 
+        const PAD_H = 0;
 
         // Calculate content dimensions (without padding)
         const contentWidth = Math.max(1, initialProps.domWidth - PAD_W);
@@ -140,8 +143,8 @@ export default class TextObject extends LabelObject {
         
         // Grid snapping for TL position
         if (handle === 'tl' && snapToGrid && newProps.x !== undefined) {
-             newProps.x = Math.round(newProps.x / gridSize) * gridSize;
-             newProps.y = Math.round(newProps.y / gridSize) * gridSize;
+             newProps.x = snap(newProps.x, gridSize);
+             newProps.y = snap(newProps.y, gridSize);
         }
 
         return newProps;

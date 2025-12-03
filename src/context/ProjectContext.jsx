@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ObjectRegistry from '../classes/ObjectRegistry';
+import { getZplCoordinates, getLabelDimensionsInDots } from '../utils/zplMath';
 
 const ProjectContext = createContext();
 
@@ -33,6 +34,8 @@ export const ProjectProvider = ({ children }) => {
         snapToGrid: true,
         gridSize: 10 // Pixels
     });
+
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     const activeLabel = project.labels.find(l => l.id === activeLabelId);
 
@@ -117,16 +120,8 @@ export const ProjectProvider = ({ children }) => {
 
         const { width, height, dpmm, unit } = label.settings;
         
-        // Calculate print width/height in dots
-        const printWidth = Math.round(width * 25.4 * dpmm);
-        const labelLength = Math.round(height * 25.4 * dpmm);
-        
-        // Display uses 100 DPI, printer uses actual dpmm
-        // Calculate conversion ratio: printer dots per display pixel
-        const DISPLAY_DPI = 100;
-        const displayPixelsPerUnit = unit === 'inch' ? DISPLAY_DPI : (DISPLAY_DPI / 25.4);
-        const printerDotsPerUnit = unit === 'inch' ? (25.4 * dpmm) : dpmm;
-        const conversionRatio = printerDotsPerUnit / displayPixelsPerUnit;
+        // Calculate print width/height in dots using centralized logic
+        const { width: printWidth, height: labelLength } = getLabelDimensionsInDots(width, height, dpmm, unit);
 
         let zpl = `^XA\n^PW${printWidth}\n^LL${labelLength}\n^PON\n`;
 
@@ -134,28 +129,7 @@ export const ProjectProvider = ({ children }) => {
             const def = ObjectRegistry.get(obj.type);
             if (def && def.class) {
                 // Create a copy with coordinates converted to printer dots
-                const convertedObj = { ...obj };
-                
-                // Convert positions
-                if (typeof convertedObj.x === 'number') {
-                    convertedObj.x = Math.round(convertedObj.x * conversionRatio);
-                }
-                if (typeof convertedObj.y === 'number') {
-                    convertedObj.y = Math.round(convertedObj.y * conversionRatio);
-                }
-                
-                // Convert dimensions
-                if (typeof convertedObj.width === 'number') {
-                    convertedObj.width = Math.round(convertedObj.width * conversionRatio);
-                }
-                if (typeof convertedObj.height === 'number') {
-                    convertedObj.height = Math.round(convertedObj.height * conversionRatio);
-                }
-                
-                // Convert font size (approximate - may need adjustment)
-                if (typeof convertedObj.fontSize === 'number') {
-                    convertedObj.fontSize = Math.round(convertedObj.fontSize * conversionRatio);
-                }
+                const convertedObj = getZplCoordinates(obj, label.settings);
                 
                 const instance = new def.class(convertedObj);
                 Object.assign(instance, convertedObj);
@@ -183,7 +157,9 @@ export const ProjectProvider = ({ children }) => {
             addObject,
             updateObject,
             updateLabelSettings,
-            generateZPL
+            generateZPL,
+            isPreviewOpen,
+            setIsPreviewOpen
         }}>
             {children}
         </ProjectContext.Provider>

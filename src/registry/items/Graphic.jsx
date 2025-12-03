@@ -1,6 +1,7 @@
 import React from 'react';
 import LabelObject from '../../classes/LabelObject';
 import CommonProperties from '../../components/CommonProperties';
+import { calculateNewDimensions } from '../../utils/resizeUtils';
 
 // --- Logic ---
 export class GraphicObject extends LabelObject {
@@ -55,67 +56,7 @@ export class GraphicObject extends LabelObject {
     }
 
     resize(handle, delta, settings, initialProps) {
-        const { dx, dy } = delta;
-        const { snapToGrid, gridSize, confineToLabel, bleed, labelDim } = settings;
-        const minSize = 10;
-        
-        let newProps = {};
-
-        // Helper for grid snapping
-        const snap = (val) => snapToGrid ? Math.round(val / gridSize) * gridSize : val;
-
-        if (handle === 'br') {
-            // Bottom-Right: Changes width/height, x/y fixed
-            let newWidth = Math.max(minSize, initialProps.width + dx);
-            let newHeight = Math.max(minSize, initialProps.height + dy);
-
-            if (snapToGrid) {
-                newWidth = snap(newWidth);
-                newHeight = snap(newHeight);
-            }
-
-            if (confineToLabel) {
-                const maxWidth = labelDim.width + bleed - initialProps.x;
-                const maxHeight = labelDim.height + bleed - initialProps.y;
-                newWidth = Math.min(newWidth, Math.max(minSize, maxWidth));
-                newHeight = Math.min(newHeight, Math.max(minSize, maxHeight));
-            }
-
-            newProps.width = newWidth;
-            newProps.height = newHeight;
-
-        } else if (handle === 'tl') {
-            // Top-Left: Changes x/y AND width/height. Anchor is Bottom-Right.
-            const brX = initialProps.x + initialProps.width;
-            const brY = initialProps.y + initialProps.height;
-
-            // Proposed new Top-Left
-            let newX = initialProps.x + dx;
-            let newY = initialProps.y + dy;
-
-            if (snapToGrid) {
-                newX = snap(newX);
-                newY = snap(newY);
-            }
-
-            // Confinement checks for Top-Left
-            if (confineToLabel) {
-                newX = Math.max(-bleed, newX);
-                newY = Math.max(-bleed, newY);
-            }
-
-            // Ensure we don't cross the bottom-right anchor (minus min size)
-            newX = Math.min(newX, brX - minSize);
-            newY = Math.min(newY, brY - minSize);
-
-            // Calculate dimensions based on final x/y and fixed brX/brY
-            newProps.x = newX;
-            newProps.y = newY;
-            newProps.width = brX - newX;
-            newProps.height = brY - newY;
-        }
-
-        return newProps;
+        return calculateNewDimensions({ handle, delta, settings, initialProps });
     }
 }
 

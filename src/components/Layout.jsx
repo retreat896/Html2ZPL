@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import Editor from './Editor';
 import RightSidebar from './RightSidebar';
+import ZplPreviewModal from './ZplPreviewModal';
 
 export default function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -39,6 +40,8 @@ export default function Layout() {
 
         <RightSidebar />
       </div>
+      
+      <ZplPreviewModal />
     </div>
   );
 }

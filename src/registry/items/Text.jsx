@@ -10,7 +10,7 @@ import TextObject from '../../classes/items/TextObject';
 export const TextComponent = ({ object }) => {
     return (
         <span 
-            className="text-black whitespace-nowrap select-none inline-block px-1 py-0.5" 
+            className="text-black whitespace-nowrap select-none inline-block leading-none" 
             style={{ fontSize: object.fontSize }}
         >
             {object.text}

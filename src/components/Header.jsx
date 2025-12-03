@@ -2,42 +2,10 @@ import React from 'react';
 import { useProject } from '../context/ProjectContext';
 
 export default function Header({ toggleSidebar, toggleRightSidebar }) {
-  const { generateZPL, activeLabelId, activeLabel } = useProject();
+  const { setIsPreviewOpen } = useProject();
 
-  const handleExport = async () => {
-    if (!activeLabelId) return;
-    const zpl = generateZPL(activeLabelId);
-    console.log('Generated ZPL:', zpl);
-
-    // Labelary API request
-    const dpmm = activeLabel?.settings?.dpmm || 8;
-    const width = activeLabel?.settings?.width || 4;
-    const height = activeLabel?.settings?.height || 6;
-    
-    const url = `http://api.labelary.com/v1/printers/${dpmm}dpmm/labels/${width}x${height}/0/`;
-    
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: zpl
-        });
-
-        if (response.ok) {
-            const blob = await response.blob();
-            const imageUrl = URL.createObjectURL(blob);
-            // Open preview in new tab
-            window.open(imageUrl, '_blank');
-        } else {
-            console.error('Labelary API Error:', response.statusText);
-            alert('Failed to generate preview. Check console for details.');
-        }
-    } catch (error) {
-        console.error('Export Error:', error);
-        alert('Failed to connect to Labelary API.');
-    }
+  const handlePreview = () => {
+    setIsPreviewOpen(true);
   };
 
   return (
@@ -57,15 +25,14 @@ export default function Header({ toggleSidebar, toggleRightSidebar }) {
       {/* Right Side: Actions + User */}
       <div id="rightPanel" className="flex items-center gap-4">
         <button 
-            onClick={handleExport}
+            onClick={handlePreview}
             className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-            <polyline points="16 6 12 2 8 6"></polyline>
-            <line x1="12" y1="2" x2="12" y2="15"></line>
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
           </svg>
-          Export / Preview
+          Preview ZPL
         </button>
         <button className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -17,7 +17,8 @@
     "react-dom": "^18.2.0",
     "sonner": "^1.4.0",
     "tailwind-merge": "^2.2.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zpl-renderer-js": "^2.0.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",
