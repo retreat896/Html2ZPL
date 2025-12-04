@@ -7,6 +7,8 @@ const ProjectContext = createContext();
 
 export const useProject = () => useContext(ProjectContext);
 
+const DEFAULT_LABEL_SETTINGS = { width: 4, height: 6, unit: 'inch', dpmm: 8 };
+
 export const ProjectProvider = ({ children }) => {
     const [project, setProject] = useState({
         version: '1.1',
@@ -19,7 +21,7 @@ export const ProjectProvider = ({ children }) => {
             {
                 id: uuidv4(),
                 name: 'Label 1',
-                settings: { width: 4, height: 6, unit: 'inch', dpmm: 8 },
+                settings: { ...DEFAULT_LABEL_SETTINGS },
                 objects: []
             }
         ]
@@ -44,7 +46,7 @@ export const ProjectProvider = ({ children }) => {
         const newLabel = {
             id: uuidv4(),
             name: `Label ${project.labels.length + 1}`,
-            settings: { width: 4, height: 6, unit: 'inch', dpmm: 8 },
+            settings: { ...DEFAULT_LABEL_SETTINGS },
             objects: []
         };
         setProject({ ...project, labels: [...project.labels, newLabel] });
@@ -64,7 +66,7 @@ export const ProjectProvider = ({ children }) => {
         }
     };
 
-    const addObject = (type) => {
+    const addObject = (type, extraProps = {}) => {
         if (!activeLabel) return;
 
         const definition = ObjectRegistry.get(type);
@@ -73,7 +75,7 @@ export const ProjectProvider = ({ children }) => {
             return;
         }
 
-        const defaultProps = { x: 50, y: 50 };
+        const defaultProps = { x: 50, y: 50, ...extraProps };
         const newObj = new definition.class(defaultProps);
 
         const updatedLabels = project.labels.map(label => {

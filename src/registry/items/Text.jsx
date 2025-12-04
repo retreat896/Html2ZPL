@@ -170,7 +170,7 @@ export const TextComponent = ({ object }) => {
     return (
         <span 
             className="text-black whitespace-nowrap select-none inline-block leading-none" 
-            style={{ fontSize: object.fontSize }}
+            style={{ fontSize: `${object.fontSize}px` }}
         >
             {object.text}
         </span>

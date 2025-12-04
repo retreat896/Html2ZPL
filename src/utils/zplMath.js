@@ -12,12 +12,12 @@ export const convertPixelsToDots = (value, dpmm, unit) => {
 
     // Display uses 100 DPI (DISPLAY_DPI)
     // Printer uses actual dpmm (e.g., 8 dpmm = 203.2 dpi)
-    
+
     const displayPixelsPerUnit = unit === 'inch' ? DISPLAY_DPI : (DISPLAY_DPI / 25.4);
     const printerDotsPerUnit = unit === 'inch' ? (25.4 * dpmm) : dpmm;
     const conversionRatio = printerDotsPerUnit / displayPixelsPerUnit;
 
-    return Math.round(value * conversionRatio);
+    return Math.ceil(value * conversionRatio);
 };
 
 /**
@@ -32,8 +32,8 @@ export const getLabelDimensionsInDots = (width, height, dpmm, unit) => {
     const printerDotsPerUnit = unit === 'inch' ? (25.4 * dpmm) : dpmm;
 
     return {
-        width: Math.round(width * printerDotsPerUnit),
-        height: Math.round(height * printerDotsPerUnit)
+        width: Math.ceil(width * printerDotsPerUnit),
+        height: Math.ceil(height * printerDotsPerUnit)
     };
 };
 

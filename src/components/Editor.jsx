@@ -35,6 +35,35 @@ export default function Editor() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const canvasContainerRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target.result;
+      const img = new Image();
+      img.onload = () => {
+        // Default to image dimensions, but cap at label size?
+        // Let's just use image dimensions for now, user can resize.
+        // Or maybe cap at 200px for usability?
+        // Let's use natural dimensions but ensure it fits somewhat?
+        // No, let's just use natural dimensions.
+        addObject('image', {
+          src: dataUrl,
+          width: img.width,
+          height: img.height
+        });
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    
+    // Reset input
+    e.target.value = '';
+  };
 
   // Calculate Label Dimensions in Pixels (using fixed 100 DPI for display)
   // DISPLAY_DPI imported from constants
@@ -197,23 +226,7 @@ export default function Editor() {
     if (element) {
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
-                // contentRect gives the size of the content box
-                // getBoundingClientRect gives the size including padding/border and transforms
-                // We want the logical size, which for max-content div should be close to contentRect or offsetWidth
-                
-                // However, if we use transform on this element, getBoundingClientRect will be rotated.
-                // contentRect is usually pre-transform.
                 const { width: logicalWidth, height: logicalHeight } = entry.contentRect;
-                
-                // Adjust for zoom if necessary? contentRect is in CSS pixels.
-                // Our zoom is applied to the parent container scale.
-                // So contentRect should be unzoomed? No, it's in the scaled coordinate system?
-                // Wait, the parent has `scale(${zoomLevel})`.
-                // So internal CSS pixels are "zoomed" visually but numerically they are 1:1 with the coordinate system.
-                // So we don't need to divide by zoomLevel here?
-                // Let's check: if zoom is 2x, a 100px div is 200px on screen.
-                // contentRect should report 100.
-                
                 const width = logicalWidth;
                 const height = logicalHeight;
                 
@@ -221,6 +234,78 @@ export default function Editor() {
                 
                 const currentObj = activeLabel.objects.find(o => o.id === selectedObjectId);
                 if (currentObj) {
+                    // Auto-Fit Text Logic
+                    if (currentObj.type === 'text' && editorSettings.confineToLabel) {
+                        const bleed = editorSettings.bleed || 0;
+                        const isVertical = ['R', 'B'].includes(currentObj.orientation);
+                        
+                        // Calculate visual dimensions/position based on orientation
+                        // If vertical, width/height are swapped visually
+                        const visualWidth = isVertical ? height : width;
+                        const visualHeight = isVertical ? width : height;
+                        
+                        // Calculate visual X/Y (top-left of bounding box)
+                        // Note: Our rotation logic keeps the anchor at top-left, but the visual box extends:
+                        // N: x to x+w, y to y+h
+                        // R: x to x+h, y to y+w (visual box is x,y to x+h,y+w)
+                        // I: x to x+w, y to y+h (visual box is x,y to x+w,y+h) - Wait, I rotation shifts by w,h.
+                        // Let's re-verify the visual bounding box relative to x,y.
+                        
+                        // With our new rotation logic:
+                        // N: translate(0,0) -> box at x,y
+                        // R: translate(h,0) rotate(90) -> box from x to x+h, y to y+w?
+                        //    Rotate 90 around TL: (0,0) -> (0,0), (w,0) -> (0,w), (0,h) -> (-h,0).
+                        //    Translate(h,0): (0,0)->(h,0), (-h,0)->(0,0).
+                        //    So visual box is [0, h] x [0, w] relative to anchor? Yes.
+                        // I: translate(w,h) rotate(180) -> box from x to x+w, y to y+h?
+                        //    Rotate 180 around TL: (w,h) -> (-w,-h).
+                        //    Translate(w,h): (-w,-h) -> (0,0).
+                        //    So visual box is [0, w] x [0, h] relative to anchor? Yes.
+                        // B: translate(0,w) rotate(270) -> box from x to x+h, y to y+w?
+                        //    Rotate 270 around TL: (0,h) -> (h,0), (w,0) -> (0,-w).
+                        //    Translate(0,w): (0,-w) -> (0,0).
+                        //    So visual box is [0, h] x [0, w] relative to anchor? Yes.
+                        
+                        // Conclusion: The visual bounding box is ALWAYS [x, x + visualWidth] and [y, y + visualHeight].
+                        // So we just need to check if x + visualWidth > labelWidth, etc.
+                        
+                        const maxX = labelDim.width + bleed;
+                        const maxY = labelDim.height + bleed;
+                        const minX = -bleed;
+                        const minY = -bleed;
+                        
+                        const currentRight = currentObj.x + visualWidth;
+                        const currentBottom = currentObj.y + visualHeight;
+                        
+                        let overflowRatio = 1;
+                        
+                        if (currentRight > maxX) {
+                            const availableW = Math.max(0, maxX - currentObj.x);
+                            overflowRatio = Math.min(overflowRatio, availableW / visualWidth);
+                        }
+                        if (currentBottom > maxY) {
+                            const availableH = Math.max(0, maxY - currentObj.y);
+                            overflowRatio = Math.min(overflowRatio, availableH / visualHeight);
+                        }
+                        
+                        // Also check left/top overflow (though resizing usually pushes right/down, typing pushes right)
+                        // If x < minX, we can't shrink font to fix it (unless we move x, but we only change font size).
+                        // So we ignore left/top overflow for auto-shrink?
+                        // Or should we shrink if it's too big to fit even if moved?
+                        // The request is "change font size until it fits".
+                        // If x is negative, shrinking font reduces width, but x stays negative.
+                        // So right edge moves left.
+                        // Let's focus on Right/Bottom overflow which is caused by typing.
+                        
+                        if (overflowRatio < 1) {
+                            const newFontSize = Math.floor(currentObj.fontSize * overflowRatio);
+                            if (newFontSize < currentObj.fontSize && newFontSize >= 5) {
+                                updateObject(selectedObjectId, { fontSize: newFontSize });
+                                return; // Skip updating width/height this cycle, wait for re-render
+                            }
+                        }
+                    }
+
                     const diffW = Math.abs((currentObj.width || 0) - width);
                     const diffH = Math.abs((currentObj.height || 0) - height);
                     
@@ -398,6 +483,24 @@ export default function Editor() {
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
             </svg>
           </button>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white" 
+            title="Image Tool"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImageUpload} 
+            accept="image/*" 
+            className="hidden" 
+          />
         </div>
         <div className="flex items-center gap-2 relative">
           {/* Settings Button */}
