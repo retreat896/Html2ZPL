@@ -29,7 +29,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         <div id="sidebar-header" className="transition-all flex items-center justify-between h-16 md:p-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <a href="#" className="flex items-center gap-1 overflow-hidden">
             {/* Icon */}
-            <img className="pl-4 w-12 h-12 shrink-0" src="/images/favicon.svg" alt="Logo" />
+            <img className="pl-4 w-12 h-12 shrink-0" src="/favicon.svg" alt="Logo" />
             <span className={clsx("text-xl font-semibold text-gray-800 dark:text-white transition-all whitespace-nowrap", !isOpen && "lg:opacity-0 lg:w-0")}>
               LabelEditor
             </span>

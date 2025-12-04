@@ -32,7 +32,8 @@ export const ProjectProvider = ({ children }) => {
         bleed: 0, // Pixels of bleed allowed beyond label boundaries (can be negative for inset)
         showGrid: true,
         snapToGrid: true,
-        gridSize: 10 // Pixels
+        gridSize: 10, // Pixels
+        showHtmlObjects: true
     });
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);

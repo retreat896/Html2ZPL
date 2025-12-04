@@ -7,9 +7,11 @@ import './index.css'
 import ObjectRegistry from './classes/ObjectRegistry';
 import Text from './registry/items/Text';
 import Graphic from './registry/items/Graphic';
+import Barcode from './registry/items/Barcode';
 
 ObjectRegistry.register(Text);
 ObjectRegistry.register(Graphic);
+ObjectRegistry.register(Barcode);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

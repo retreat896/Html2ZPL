@@ -125,13 +125,27 @@ export default function Editor() {
   const handleObjectMouseDown = (e, objId, currentX, currentY) => {
     e.stopPropagation();
     
-    // Get actual DOM dimensions
-    const element = e.currentTarget;
-    const rect = element.getBoundingClientRect();
+    // Get actual DOM dimensions from the inner wrapper to ensure logical size
+    // The currentTarget is the outer wrapper.
+    const innerWrapper = e.currentTarget.querySelector('[data-internal-wrapper="true"]');
+    const rect = innerWrapper ? innerWrapper.getBoundingClientRect() : e.currentTarget.getBoundingClientRect();
     
-    // Store dimensions (accounting for zoom)
-    const width = rect.width / zoomLevel;
-    const height = rect.height / zoomLevel;
+    // If we are using innerWrapper, we need to be careful about rotation.
+    // getBoundingClientRect returns the bounding box of the transformed element (rotated).
+    // So if rotated 90deg, width is height.
+    
+    // Actually, for dragging, we just need the visual bounding box?
+    // No, setObjDimensions is used for confinement and grid snapping.
+    // And updateObject updates the state.
+    
+    // If we want logical dimensions:
+    // We can use offsetWidth/offsetHeight of the innerWrapper (if it's block-level and not transformed? No, transform affects visual but not layout size usually, but here it's max-content).
+    
+    // Let's rely on the values we have in state if possible, or calculate from rect.
+    // If we use offsetWidth/Height of innerWrapper, it should be unrotated size.
+    
+    const width = innerWrapper ? innerWrapper.offsetWidth : (rect.width / zoomLevel);
+    const height = innerWrapper ? innerWrapper.offsetHeight : (rect.height / zoomLevel);
 
     setObjDimensions({ width, height });
     
@@ -177,33 +191,40 @@ export default function Editor() {
     // We added a specific class or ID? No, but we can find by data attribute if we add one,
     // or just rely on the fact that we render them.
     // Let's add a data-id to the object container in the render loop.
-    const element = canvasContainerRef.current.querySelector(`[data-object-id="${selectedObjectId}"]`);
+    // Observe the inner wrapper to get logical (unrotated) dimensions
+    const element = canvasContainerRef.current.querySelector(`[data-object-id="${selectedObjectId}"] [data-internal-wrapper="true"]`);
     
     if (element) {
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
-                const { width: domWidth, height: domHeight } = entry.contentRect;
-                // contentRect doesn't include border/padding? 
-                // getBoundingClientRect is better for outer size including border
-                const rect = element.getBoundingClientRect();
-                const width = rect.width / zoomLevel;
-                const height = rect.height / zoomLevel;
+                // contentRect gives the size of the content box
+                // getBoundingClientRect gives the size including padding/border and transforms
+                // We want the logical size, which for max-content div should be close to contentRect or offsetWidth
+                
+                // However, if we use transform on this element, getBoundingClientRect will be rotated.
+                // contentRect is usually pre-transform.
+                const { width: logicalWidth, height: logicalHeight } = entry.contentRect;
+                
+                // Adjust for zoom if necessary? contentRect is in CSS pixels.
+                // Our zoom is applied to the parent container scale.
+                // So contentRect should be unzoomed? No, it's in the scaled coordinate system?
+                // Wait, the parent has `scale(${zoomLevel})`.
+                // So internal CSS pixels are "zoomed" visually but numerically they are 1:1 with the coordinate system.
+                // So we don't need to divide by zoomLevel here?
+                // Let's check: if zoom is 2x, a 100px div is 200px on screen.
+                // contentRect should report 100.
+                
+                const width = logicalWidth;
+                const height = logicalHeight;
                 
                 setObjDimensions({ width, height });
                 
-                // Update global state if significantly different
-                // We need to be careful not to cause infinite loops if updateObject triggers re-render -> resize -> updateObject
-                // But updateObject only changes props. If props change size, it stabilizes.
-                // We check against the *current* object state from activeLabel to see if update is needed.
                 const currentObj = activeLabel.objects.find(o => o.id === selectedObjectId);
                 if (currentObj) {
                     const diffW = Math.abs((currentObj.width || 0) - width);
                     const diffH = Math.abs((currentObj.height || 0) - height);
                     
                     if (diffW > 1 || diffH > 1) {
-                        // Only update state for objects that auto-resize (like text)
-                        // Fixed-size objects (graphics) should not be updated by DOM changes
-                        // to prevent zoom-induced resizing loops.
                         if (currentObj.type === 'text') {
                             updateObject(selectedObjectId, { width, height });
                         }
@@ -242,8 +263,11 @@ export default function Editor() {
       }
 
       if (editorSettings.confineToLabel) {
-        const objWidth = objDimensions.width;
-        const objHeight = objDimensions.height;
+        const currentObj = activeLabel.objects.find(o => o.id === selectedObjectId);
+        const isVertical = currentObj && ['R', 'B'].includes(currentObj.orientation);
+        
+        const objWidth = isVertical ? objDimensions.height : objDimensions.width;
+        const objHeight = isVertical ? objDimensions.width : objDimensions.height;
         const bleed = editorSettings.bleed || 0;
 
         newX = Math.max(-bleed, Math.min(newX, labelDim.width + bleed - objWidth));
@@ -435,6 +459,16 @@ export default function Editor() {
                     <span className="text-sm text-gray-700 dark:text-gray-200">Snap to Grid</span>
                 </label>
 
+                <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        checked={editorSettings.showHtmlObjects}
+                        onChange={(e) => setEditorSettings({ ...editorSettings, showHtmlObjects: e.target.checked })}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-200">Show HTML Objects</span>
+                </label>
+
                 <div className="px-2 space-y-1">
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
                         Grid Size (px)
@@ -474,7 +508,7 @@ export default function Editor() {
         ref={canvasContainerRef}
       >
         <div 
-            className="absolute origin-center transition-transform duration-75 ease-out"
+            className="absolute origin-center transition-transform duration-75 ease-out select-none"
             style={{
                 transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
                 left: '50%',
@@ -496,7 +530,7 @@ export default function Editor() {
                     <img 
                         src={previewImage} 
                         alt="ZPL Preview" 
-                        className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-0 opacity-50"
+                        className={`absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-0 ${editorSettings.showHtmlObjects ? 'opacity-50' : 'opacity-100'}`}
                         draggable={false}
                     />
                 )}
@@ -512,6 +546,8 @@ export default function Editor() {
                     />
                 )}
 
+
+
                  {activeLabel?.objects.map(obj => (
                     <div 
                         key={obj.id}
@@ -519,19 +555,47 @@ export default function Editor() {
                         className={`absolute cursor-move hover:ring-1 hover:ring-blue-600 ${selectedObjectId === obj.id ? 'ring-1 ring-blue-600' : ''} z-10`}
                         style={{ 
                             left: obj.x, 
-                            top: obj.y
+                            top: obj.y,
+                            width: (() => {
+                                const isVertical = ['R', 'B'].includes(obj.orientation);
+                                return isVertical ? (obj.height || 'auto') : (obj.width || 'auto');
+                            })(),
+                            height: (() => {
+                                const isVertical = ['R', 'B'].includes(obj.orientation);
+                                return isVertical ? (obj.width || 'auto') : (obj.height || 'auto');
+                            })()
                         }}
                         onMouseDown={(e) => handleObjectMouseDown(e, obj.id, obj.x, obj.y)}
                     >
-                        {(() => {
-                            const def = ObjectRegistry.get(obj.type);
-                            const Component = def?.Component;
-                            return Component ? (
-                                <Component object={obj} />
-                            ) : (
-                                <span className="text-xs text-gray-500 select-none inline-block px-1 py-0.5">Unknown: {obj.type}</span>
-                            );
-                        })()}
+                        <div 
+                            data-internal-wrapper="true"
+                            className={!editorSettings.showHtmlObjects ? 'opacity-0' : ''}
+                            style={{
+                                width: 'max-content',
+                                height: 'max-content',
+                                transform: (() => {
+                                    const w = obj.width || 0;
+                                    const h = obj.height || 0;
+                                    switch (obj.orientation) {
+                                        case 'R': return `translate(${h}px, 0px) rotate(90deg)`;
+                                        case 'I': return `translate(${w}px, ${h}px) rotate(180deg)`;
+                                        case 'B': return `translate(0px, ${w}px) rotate(270deg)`;
+                                        default: return `rotate(0deg)`;
+                                    }
+                                })(),
+                                transformOrigin: 'top left'
+                            }}
+                        >
+                            {(() => {
+                                const def = ObjectRegistry.get(obj.type);
+                                const Component = def?.Component;
+                                return Component ? (
+                                    <Component object={obj} />
+                                ) : (
+                                    <span className="text-xs text-gray-500 select-none inline-block px-1 py-0.5">Unknown: {obj.type}</span>
+                                );
+                            })()}
+                        </div>
                         
                         {/* Resize Handles */}
                         {selectedObjectId === obj.id && (

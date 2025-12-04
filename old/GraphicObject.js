@@ -1,9 +1,7 @@
-import React from 'react';
-import LabelObject from '../../classes/LabelObject';
+import LabelObject from '../LabelObject';
 import { snap } from '../../utils/resizeUtils';
 
-// --- Logic ---
-class GraphicObject extends LabelObject {
+export default class GraphicObject extends LabelObject {
     constructor(props = {}) {
         super('graphic', props);
         this.shape = props.shape || 'box'; // box, circle, line, ellipse
@@ -11,29 +9,28 @@ class GraphicObject extends LabelObject {
         this.height = props.height || 100;
         this.thickness = props.thickness || 1;
         this.color = props.color || 'B'; // B=Black, W=White
-        this.rounding = props.rounding || 0; // 0-8, for box
-        this.lineOrientation = props.lineOrientation || 'L'; // L=Left, R=Right, for line
     }
 
     toZPL() {
         let command = '';
-
+        console.log("the shape is: " + this.shape);
         switch (this.shape) {
             case 'box':
                 // ^GBw,h,t,c,r
-                command = `^GB${this.width},${this.height},${this.thickness},${this.color},${this.rounding}`;
+                command = `^GB${this.width},${this.height},${this.thickness},${this.color},0`;
                 break;
             case 'circle':
                 // ^GCd,t,c
                 command = `^GC${this.width},${this.thickness},${this.color}`;
                 break;
+            case 'line':
+                // ^GDw,h,t,c,o
+                // Diagonal line, but often used for simple lines too if h or w is 0
+                command = `^GD${this.width},${this.height},${this.thickness},${this.color},L`;
+                break;
             case 'ellipse':
                 // ^GEw,h,t,c
                 command = `^GE${this.width},${this.height},${this.thickness},${this.color}`;
-                break;
-            case 'line':
-                // ^GDw,h,t,c,o
-                command = `^GD${this.width},${this.height},${this.thickness},${this.color},${this.lineOrientation}`;
                 break;
             default:
                 command = `^GB${this.width},${this.height},${this.thickness},${this.color},0`;
@@ -48,18 +45,16 @@ class GraphicObject extends LabelObject {
             width: this.width,
             height: this.height,
             thickness: this.thickness,
-            color: this.color,
-            rounding: this.rounding,
-            lineOrientation: this.lineOrientation
+            color: this.color
         };
     }
 
     resize(handle, delta, settings, initialProps) {
         const { dx, dy } = delta;
         const { snapToGrid, gridSize, confineToLabel, bleed, labelDim } = settings;
-        
+
         let newProps = {};
-        
+
         // Calculate new dimensions based on handle
         let newWidth = initialProps.width;
         let newHeight = initialProps.height;
@@ -72,6 +67,10 @@ class GraphicObject extends LabelObject {
         } else if (handle === 'tl') {
             newWidth = Math.max(10, initialProps.width - dx);
             newHeight = Math.max(10, initialProps.height - dy);
+
+            // For TL, we also need to update position
+            // But position update depends on the actual size change (after constraints)
+            // So we calculate desired X/Y based on the desired width/height change
         }
 
         // Enforce 1:1 aspect ratio for circles
@@ -97,7 +96,7 @@ class GraphicObject extends LabelObject {
                 if (initialProps.y + newHeight > maxY) {
                     newHeight = maxY - initialProps.y;
                 }
-                
+
                 // Re-enforce aspect ratio if it was clamped
                 if (this.shape === 'circle') {
                     const size = Math.min(newWidth, newHeight);
@@ -106,6 +105,11 @@ class GraphicObject extends LabelObject {
                 }
 
             } else if (handle === 'tl') {
+                // Calculate potential new X/Y
+                // newX = initialProps.x + (initialProps.width - newWidth)
+                // We need to ensure newX >= minX and newY >= minY
+
+                // It's easier to think about the Bottom-Right point being fixed for TL resize
                 const brX = initialProps.x + initialProps.width;
                 const brY = initialProps.y + initialProps.height;
 
@@ -144,51 +148,58 @@ class GraphicObject extends LabelObject {
                 // Snap position
                 newX = snap(newX, gridSize);
                 newY = snap(newY, gridSize);
-                
+
                 // Recalculate size based on snapped position to maintain BR anchor
                 const brX = initialProps.x + initialProps.width;
                 const brY = initialProps.y + initialProps.height;
-                
+
                 newWidth = brX - newX;
                 newHeight = brY - newY;
             } else {
+                // For BR, we snap the width/height directly (or the resulting BR coordinate)
+                // Let's snap the resulting width/height to grid multiples? 
+                // Or snap the resulting BR coordinate?
+                // TextObject doesn't seem to snap BR explicitly in the snippet, but let's snap dimensions
+                // Actually, snapping dimensions is safer for graphics
                 newWidth = snap(newWidth, gridSize);
                 newHeight = snap(newHeight, gridSize);
             }
-            
+
             // Re-enforce circle constraint after snapping
             if (this.shape === 'circle') {
-                 const size = Math.max(newWidth, newHeight);
-                 newWidth = size;
-                 newHeight = size;
-                 
-                 if (handle === 'tl') {
+                // If we snapped, they might be different again
+                const size = Math.max(newWidth, newHeight);
+                newWidth = size;
+                newHeight = size;
+
+                // If TL, we need to adjust X/Y again if size changed
+                if (handle === 'tl') {
                     const brX = initialProps.x + initialProps.width;
                     const brY = initialProps.y + initialProps.height;
                     newX = brX - newWidth;
                     newY = brY - newHeight;
-                 }
+                }
             }
         }
 
         // Final Minimum Size Check
         newWidth = Math.max(10, newWidth);
         newHeight = Math.max(10, newHeight);
-        
+
         if (this.shape === 'circle') {
             newWidth = Math.max(newWidth, newHeight);
             newHeight = newWidth;
-             if (handle === 'tl') {
+            if (handle === 'tl') {
                 const brX = initialProps.x + initialProps.width;
                 const brY = initialProps.y + initialProps.height;
                 newX = brX - newWidth;
                 newY = brY - newHeight;
-             }
+            }
         }
 
         newProps.width = newWidth;
         newProps.height = newHeight;
-        
+
         if (handle === 'tl') {
             newProps.x = newX;
             newProps.y = newY;
@@ -196,107 +207,4 @@ class GraphicObject extends LabelObject {
 
         return newProps;
     }
-
-    static get properties() {
-        return [
-            { 
-                name: 'shape', 
-                type: 'select', 
-                label: 'Shape', 
-                options: [
-                    { value: 'box', label: 'Box' },
-                    { value: 'circle', label: 'Circle' },
-                    { value: 'ellipse', label: 'Ellipse' },
-                    { value: 'line', label: 'Diagonal Line' }
-                ] 
-            },
-            {
-                name: 'dimensions',
-                type: 'row',
-                fields: [
-                    { name: 'width', type: 'number', label: 'Width', min: 1 },
-                    { name: 'height', type: 'number', label: 'Height', min: 1 }
-                ]
-            },
-            { name: 'thickness', type: 'number', label: 'Thickness', min: 1 },
-            { 
-                name: 'color', 
-                type: 'select', 
-                label: 'Color', 
-                options: [
-                    { value: 'B', label: 'Black' },
-                    { value: 'W', label: 'White' }
-                ] 
-            },
-            { 
-                name: 'rounding', 
-                type: 'number', 
-                label: 'Rounding (0-8)', 
-                min: 0, 
-                max: 8, 
-                showIf: (obj) => obj.shape === 'box' 
-            },
-            { 
-                name: 'lineOrientation', 
-                type: 'select', 
-                label: 'Line Orientation', 
-                options: [
-                    { value: 'L', label: 'Left (TL-BR)' },
-                    { value: 'R', label: 'Right (TR-BL)' }
-                ],
-                showIf: (obj) => obj.shape === 'line'
-            }
-        ];
-    }
 }
-
-// --- Component ---
-export const GraphicComponent = ({ object }) => {
-    const { shape, width, height, thickness, color, rounding, lineOrientation } = object;
-    const borderColor = color === 'W' ? 'white' : 'black';
-    
-    const style = {
-        width: `${width}px`,
-        height: `${height}px`,
-        border: `${thickness}px solid ${borderColor}`,
-        boxSizing: 'border-box',
-    };
-
-    if (shape === 'box') {
-        if (rounding > 0) {
-            style.borderRadius = `${rounding * 4}px`; 
-        }
-    }
-
-    if (shape === 'circle' || shape === 'ellipse') {
-        style.borderRadius = '50%';
-    }
-
-    if (shape === 'line') {
-        return (
-            <div style={{ width: `${width}px`, height: `${height}px` }}>
-                <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`}>
-                    <line 
-                        x1={lineOrientation === 'R' ? width : 0} 
-                        y1="0" 
-                        x2={lineOrientation === 'R' ? 0 : width} 
-                        y2={height} 
-                        stroke={borderColor} 
-                        strokeWidth={thickness} 
-                    />
-                </svg>
-            </div>
-        );
-    }
-
-    return <div style={style} />;
-};
-
-// --- Definition ---
-export default {
-    type: 'graphic',
-    name: 'Graphic',
-    icon: 'fa-shapes',
-    class: GraphicObject,
-    Component: GraphicComponent
-};
