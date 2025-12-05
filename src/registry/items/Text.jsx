@@ -12,10 +12,10 @@ class TextObject extends LabelObject {
         this.orientation = props.orientation || 'N'; // N, R, I, B
     }
 
-    toZPL() {
+    toZPL(index) {
         // ^FOx,y^Afont,orientation,height,width^FDdata^FS
         // Use 0 for width to allow proportional scaling
-        return `^FX Text Object ID: ${this.id}\n^FO${this.x},${this.y}^A${this.font}${this.orientation},${this.fontSize}^FD${this.text}^FS`;
+        return `^FX Text Object ID: ${this.id} Z:${index}\n^FO${this.x},${this.y}^A${this.font}${this.orientation},${this.fontSize}^FD${this.text}^FS`;
     }
 
     getProps() {
@@ -23,18 +23,18 @@ class TextObject extends LabelObject {
             text: this.text,
             font: this.font,
             fontSize: this.fontSize,
-            orientation: this.orientation
+            orientation: this.orientation,
         };
     }
 
     resize(handle, delta, settings, initialProps) {
         const { dx, dy } = delta;
         const { snapToGrid, gridSize, confineToLabel, bleed, labelDim } = settings;
-        
+
         let newProps = {};
         let scaleFactor = 1;
 
-        const PAD_W = 0; 
+        const PAD_W = 0;
         const PAD_H = 0;
 
         // Calculate content dimensions (without padding)
@@ -61,8 +61,8 @@ class TextObject extends LabelObject {
             const getDims = (fs) => {
                 const ratio = fs / initialProps.fontSize;
                 return {
-                    w: (contentWidth * ratio) + PAD_W,
-                    h: (contentHeight * ratio) + PAD_H
+                    w: contentWidth * ratio + PAD_W,
+                    h: contentHeight * ratio + PAD_H,
                 };
             };
 
@@ -71,7 +71,7 @@ class TextObject extends LabelObject {
             if (handle === 'br') {
                 const maxX = labelDim.width + bleed;
                 const maxY = labelDim.height + bleed;
-                
+
                 // Check Width
                 if (initialProps.x + newWidth > maxX) {
                     const maxW = maxX - initialProps.x;
@@ -79,21 +79,20 @@ class TextObject extends LabelObject {
                     newFontSize = Math.floor(initialProps.fontSize * maxRatio);
                     ({ w: newWidth, h: newHeight } = getDims(newFontSize));
                 }
-                
+
                 // Check Height
                 if (initialProps.y + newHeight > maxY) {
                     const maxH = maxY - initialProps.y;
                     const maxRatio = Math.max(0, maxH - PAD_H) / contentHeight;
                     newFontSize = Math.min(newFontSize, Math.floor(initialProps.fontSize * maxRatio));
                 }
-
             } else if (handle === 'tl') {
                 const minX = -bleed;
                 const minY = -bleed;
-                
+
                 const brX = initialProps.x + initialProps.domWidth;
                 const brY = initialProps.y + initialProps.domHeight;
-                
+
                 let newX = brX - newWidth;
                 let newY = brY - newHeight;
 
@@ -116,31 +115,31 @@ class TextObject extends LabelObject {
                     newX = brX - newWidth;
                     newY = brY - newHeight;
                 }
-                
+
                 newProps.x = newX;
                 newProps.y = newY;
             }
         } else {
             if (handle === 'tl') {
                 const ratio = newFontSize / initialProps.fontSize;
-                const newWidth = (contentWidth * ratio) + PAD_W;
-                const newHeight = (contentHeight * ratio) + PAD_H;
-                
+                const newWidth = contentWidth * ratio + PAD_W;
+                const newHeight = contentHeight * ratio + PAD_H;
+
                 const brX = initialProps.x + initialProps.domWidth;
                 const brY = initialProps.y + initialProps.domHeight;
-                
+
                 newProps.x = brX - newWidth;
                 newProps.y = brY - newHeight;
             }
         }
-        
+
         newProps.fontSize = Math.max(5, newFontSize);
-        
+
         // Grid snapping for TL position
         if (handle === 'tl' && snapToGrid && newProps.x !== undefined) {
-             const snap = (val, grid) => Math.round(val / grid) * grid;
-             newProps.x = snap(newProps.x, gridSize);
-             newProps.y = snap(newProps.y, gridSize);
+            const snap = (val, grid) => Math.round(val / grid) * grid;
+            newProps.x = snap(newProps.x, gridSize);
+            newProps.y = snap(newProps.y, gridSize);
         }
 
         return newProps;
@@ -150,17 +149,17 @@ class TextObject extends LabelObject {
         return [
             { name: 'text', type: 'text', label: 'Text' },
             { name: 'fontSize', type: 'number', label: 'Font Size', min: 5, step: 1 },
-            { 
-                name: 'orientation', 
-                type: 'select', 
-                label: 'Orientation', 
+            {
+                name: 'orientation',
+                type: 'select',
+                label: 'Orientation',
                 options: [
                     { value: 'N', label: 'Normal' },
                     { value: 'R', label: 'Rotated 90' },
                     { value: 'I', label: 'Inverted 180' },
-                    { value: 'B', label: 'Bottom Up 270' }
-                ] 
-            }
+                    { value: 'B', label: 'Bottom Up 270' },
+                ],
+            },
         ];
     }
 }

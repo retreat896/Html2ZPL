@@ -13,20 +13,20 @@ class ImageObject extends LabelObject {
         this.height = props.height || 100;
         this.lockAspectRatio = props.lockAspectRatio !== undefined ? props.lockAspectRatio : true;
         this.threshold = props.threshold !== undefined ? props.threshold : 128;
-        
+
         // ZPL Data Cache
         this.zplData = props.zplData || '';
         this.totalBytes = props.totalBytes || 0;
         this.bytesPerRow = props.bytesPerRow || 0;
     }
 
-    toZPL() {
+    toZPL(index) {
         if (!this.zplData) {
-            return `^FX Image Object ID: ${this.id} (No Data)^FS`;
+            return `^FX Image Object ID: ${this.id} Z:${index} (No Data)^FS`;
         }
-        
+
         // ^GFA,totalBytes,totalBytes,bytesPerRow,data
-        return `^FX Image Object ID: ${this.id}\n^FO${this.x},${this.y}^GFA,${this.totalBytes},${this.totalBytes},${this.bytesPerRow},${this.zplData}^FS`;
+        return `^FX Image Object ID: ${this.id} Z:${index}\n^FO${this.x},${this.y}^GFA,${this.totalBytes},${this.totalBytes},${this.bytesPerRow},${this.zplData}^FS`;
     }
 
     resize(handle, delta, settings, initialProps) {
@@ -34,7 +34,7 @@ class ImageObject extends LabelObject {
         const { snapToGrid, gridSize, confineToLabel, bleed = 0, labelDim } = settings;
         const lockAspectRatio = this.lockAspectRatio;
         const aspectRatio = initialProps.width / initialProps.height;
-        
+
         let newProps = {};
         const minSize = 10;
 
@@ -47,7 +47,7 @@ class ImageObject extends LabelObject {
         if (handle === 'br') {
             let newWidth = Math.max(minSize, initialProps.width + dx);
             let newHeight = Math.max(minSize, initialProps.height + dy);
-            
+
             if (lockAspectRatio) {
                 // Determine dominant axis
                 if (Math.abs(dx) > Math.abs(dy)) {
@@ -60,7 +60,7 @@ class ImageObject extends LabelObject {
             if (snapToGrid) {
                 newWidth = Math.round(newWidth / gridSize) * gridSize;
                 newHeight = Math.round(newHeight / gridSize) * gridSize;
-                
+
                 if (lockAspectRatio) {
                     newHeight = newWidth / aspectRatio;
                 }
@@ -68,42 +68,42 @@ class ImageObject extends LabelObject {
 
             // Confinement Logic
             if (confineToLabel) {
-                 // Max width is distance from x to maxX
-                 const maxW = Math.max(minSize, maxX - initialProps.x);
-                 const maxH = Math.max(minSize, maxY - initialProps.y);
-                 
-                 newWidth = Math.min(newWidth, maxW);
-                 newHeight = Math.min(newHeight, maxH);
-                 
-                 if (lockAspectRatio) {
-                     // If we hit width limit, recalc height
-                     if (newWidth === maxW) {
-                         newHeight = newWidth / aspectRatio;
-                     }
-                     // If we hit height limit (or recalculated height exceeds it), clamp height and recalc width
-                     if (newHeight > maxH) {
-                         newHeight = maxH;
-                         newWidth = newHeight * aspectRatio;
-                     }
-                 }
+                // Max width is distance from x to maxX
+                const maxW = Math.max(minSize, maxX - initialProps.x);
+                const maxH = Math.max(minSize, maxY - initialProps.y);
+
+                newWidth = Math.min(newWidth, maxW);
+                newHeight = Math.min(newHeight, maxH);
+
+                if (lockAspectRatio) {
+                    // If we hit width limit, recalc height
+                    if (newWidth === maxW) {
+                        newHeight = newWidth / aspectRatio;
+                    }
+                    // If we hit height limit (or recalculated height exceeds it), clamp height and recalc width
+                    if (newHeight > maxH) {
+                        newHeight = maxH;
+                        newWidth = newHeight * aspectRatio;
+                    }
+                }
             }
-            
+
             newProps.width = newWidth;
             newProps.height = newHeight;
         } else if (handle === 'tl') {
             const brX = initialProps.x + initialProps.width;
             const brY = initialProps.y + initialProps.height;
-            
+
             let newX = initialProps.x + dx;
             let newY = initialProps.y + dy;
-            
+
             // Calculate dimensions based on proposed top-left
             let newWidth = brX - newX;
             let newHeight = brY - newY;
-            
+
             if (lockAspectRatio) {
                 // Determine dominant axis based on movement
-                // If moving left (dx < 0), width increases. 
+                // If moving left (dx < 0), width increases.
                 if (Math.abs(dx) > Math.abs(dy)) {
                     newHeight = newWidth / aspectRatio;
                     newY = brY - newHeight;
@@ -116,49 +116,49 @@ class ImageObject extends LabelObject {
             if (snapToGrid) {
                 newX = Math.round(newX / gridSize) * gridSize;
                 newY = Math.round(newY / gridSize) * gridSize;
-                
+
                 // Re-calculate dims
                 newWidth = brX - newX;
                 newHeight = brY - newY;
 
                 if (lockAspectRatio) {
-                     // Snap X, derive Y
-                     newHeight = newWidth / aspectRatio;
-                     newY = brY - newHeight;
+                    // Snap X, derive Y
+                    newHeight = newWidth / aspectRatio;
+                    newY = brY - newHeight;
                 }
             }
 
             // Confinement Logic
             if (confineToLabel) {
-                 if (newX < minX) {
-                     newX = minX;
-                     newWidth = brX - newX;
-                     if (lockAspectRatio) {
-                         newHeight = newWidth / aspectRatio;
-                         newY = brY - newHeight;
-                     }
-                 }
-                 if (newY < minY) {
-                     newY = minY;
-                     newHeight = brY - newY;
-                     if (lockAspectRatio) {
-                         newWidth = newHeight * aspectRatio;
-                         newX = brX - newWidth;
-                     }
-                 }
+                if (newX < minX) {
+                    newX = minX;
+                    newWidth = brX - newX;
+                    if (lockAspectRatio) {
+                        newHeight = newWidth / aspectRatio;
+                        newY = brY - newHeight;
+                    }
+                }
+                if (newY < minY) {
+                    newY = minY;
+                    newHeight = brY - newY;
+                    if (lockAspectRatio) {
+                        newWidth = newHeight * aspectRatio;
+                        newX = brX - newWidth;
+                    }
+                }
             }
-            
+
             // Min size check
             if (newWidth < minSize || newHeight < minSize) {
                 return {}; // Cancel resize if too small
             }
-            
+
             newProps.x = newX;
             newProps.y = newY;
             newProps.width = newWidth;
             newProps.height = newHeight;
         }
-        
+
         return newProps;
     }
 
@@ -171,9 +171,9 @@ class ImageObject extends LabelObject {
                 type: 'row',
                 fields: [
                     { name: 'width', type: 'number', label: 'Width', min: 10 },
-                    { name: 'height', type: 'number', label: 'Height', min: 10 }
-                ]
-            }
+                    { name: 'height', type: 'number', label: 'Height', min: 10 },
+                ],
+            },
         ];
     }
 }

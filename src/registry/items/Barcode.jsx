@@ -31,7 +31,7 @@ class BarcodeObject extends LabelObject {
 
         const dataField = this.barcodeType === 'qrcode' ? `^FDQA,${this.data}^FS` : `^FD${this.data}^FS`;
 
-        return `^FX Barcode Object ID: ${this.id}\n^FO${this.x},${this.y}${command}${dataField}`;
+        return `^FX Barcode Object ID: ${this.id} Z:${index}\n^FO${this.x},${this.y}${command}${dataField}`;
     }
 
     getProps() {

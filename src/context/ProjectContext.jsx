@@ -107,8 +107,37 @@ export const ProjectProvider = ({ children }) => {
         setProject({ ...project, labels: updatedLabels });
     };
 
+    const reorderObject = (id, action) => {
+        const updatedLabels = project.labels.map((label) => {
+            if (label.id === activeLabelId) {
+                const objects = [...label.objects];
+                const index = objects.findIndex((o) => o.id === id);
+                if (index === -1) return label;
+
+                const obj = objects[index];
+                objects.splice(index, 1); // Remove object
+
+                if (action === 'front') {
+                    objects.push(obj);
+                } else if (action === 'back') {
+                    objects.unshift(obj);
+                } else if (action === 'forward') {
+                    const newIndex = Math.min(index + 1, objects.length);
+                    objects.splice(newIndex, 0, obj);
+                } else if (action === 'backward') {
+                    const newIndex = Math.max(index - 1, 0);
+                    objects.splice(newIndex, 0, obj);
+                }
+
+                return { ...label, objects };
+            }
+            return label;
+        });
+        setProject({ ...project, labels: updatedLabels });
+    };
+
     const updateLabelSettings = (labelId, newSettings) => {
-        const updatedLabels = project.labels.map(label => {
+        const updatedLabels = project.labels.map((label) => {
             if (label.id === labelId) {
                 return { ...label, settings: { ...label.settings, ...newSettings } };
             }
@@ -117,26 +146,41 @@ export const ProjectProvider = ({ children }) => {
         setProject({ ...project, labels: updatedLabels });
     };
 
+    const updateProjectMeta = (updates) => {
+        setProject({ ...project, metadata: { ...project.metadata, ...updates } });
+    };
+
+    const renameLabel = (labelId, newName) => {
+        const updatedLabels = project.labels.map((label) => {
+            if (label.id === labelId) {
+                return { ...label, name: newName };
+            }
+            return label;
+        });
+        setProject({ ...project, labels: updatedLabels });
+    };
+
     const generateZPL = (labelId) => {
-        const label = project.labels.find(l => l.id === labelId);
+        const label = project.labels.find((l) => l.id === labelId);
         if (!label) return '';
 
         const { width, height, dpmm, unit } = label.settings;
-        
+
         // Calculate print width/height in dots using centralized logic
         const { width: printWidth, height: labelLength } = getLabelDimensionsInDots(width, height, dpmm, unit);
 
         let zpl = `^XA\n^PW${printWidth}\n^LL${labelLength}\n^PON\n`;
 
-        label.objects.forEach(obj => {
+        label.objects.forEach((obj, index) => {
             const def = ObjectRegistry.get(obj.type);
             if (def && def.class) {
                 // Create a copy with coordinates converted to printer dots
                 const convertedObj = getZplCoordinates(obj, label.settings);
-                
+
                 const instance = new def.class(convertedObj);
                 Object.assign(instance, convertedObj);
-                zpl += instance.toZPL() + '\n';
+                // Pass index to toZPL for comment inclusion
+                zpl += instance.toZPL(index) + '\n';
             }
         });
 
@@ -145,25 +189,29 @@ export const ProjectProvider = ({ children }) => {
     };
 
     return (
-        <ProjectContext.Provider value={{ 
-            project, 
-            setProject, 
-            activeLabelId, 
-            setActiveLabelId, 
-            activeLabel,
-            selectedObjectId,
-            setSelectedObjectId,
-            editorSettings,
-            setEditorSettings,
-            addLabel,
-            deleteLabel,
-            addObject,
-            updateObject,
-            updateLabelSettings,
-            generateZPL,
-            isPreviewOpen,
-            setIsPreviewOpen
-        }}>
+        <ProjectContext.Provider
+            value={{
+                project,
+                setProject,
+                activeLabelId,
+                setActiveLabelId,
+                activeLabel,
+                selectedObjectId,
+                setSelectedObjectId,
+                editorSettings,
+                setEditorSettings,
+                addLabel,
+                deleteLabel,
+                addObject,
+                updateObject,
+                reorderObject,
+                updateLabelSettings,
+                updateProjectMeta,
+                renameLabel,
+                generateZPL,
+                isPreviewOpen,
+                setIsPreviewOpen,
+            }}>
             {children}
         </ProjectContext.Provider>
     );

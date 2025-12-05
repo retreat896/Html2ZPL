@@ -39,7 +39,7 @@ class GraphicObject extends LabelObject {
                 command = `^GB${this.width},${this.height},${this.thickness},${this.color},0`;
         }
 
-        return `^FX Graphic Object ID: ${this.id}\n^FO${this.x},${this.y}${command}^FS`;
+        return `^FX Graphic Object ID: ${this.id} Z:${index}\n^FO${this.x},${this.y}${command}^FS`;
     }
 
     getProps() {
