@@ -21,6 +21,8 @@ export default class LabelObject {
             type: this.type,
             x: this.x,
             y: this.y,
+            width: this.width,
+            height: this.height,
             props: this.getProps()
         };
     }

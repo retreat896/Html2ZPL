@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useProject } from '../context/ProjectContext';
 
 export default function Header({ toggleSidebar, toggleRightSidebar }) {
-    const { project, setIsPreviewOpen, updateProjectMeta } = useProject();
+    const { project, setIsPreviewOpen, updateProjectMeta, saveProject, loadProject } = useProject();
     const [isEditing, setIsEditing] = useState(false);
     const [tempTitle, setTempTitle] = useState('');
 
@@ -65,6 +65,38 @@ export default function Header({ toggleSidebar, toggleRightSidebar }) {
                     </svg>
                     Preview ZPL
                 </button>
+
+                <button
+                    onClick={saveProject}
+                    className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    title="Save Project to ZPL File">
+                    <i className="fa-solid fa-download"></i>
+                    Save
+                </button>
+
+                <label
+                    className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                    title="Open Project from ZPL File">
+                    <i className="fa-solid fa-upload"></i>
+                    Open
+                    <input
+                        type="file"
+                        accept=".zpl,.txt"
+                        className="hidden"
+                        onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                    loadProject(ev.target.result);
+                                };
+                                reader.readAsText(file);
+                                e.target.value = null; // Reset input
+                            }
+                        }}
+                    />
+                </label>
+
                 <button className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>

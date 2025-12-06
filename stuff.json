@@ -1,0 +1,36 @@
+[
+    before
+    {
+        "version": "1.1",
+        "metadata": { "name": "New Project", "created": 1765000813806, "author": "User" },
+        "labels": [
+            {
+                "id": "03d1e02f-9691-48ac-8fdf-043e9f925201",
+                "name": "Label 1",
+                "settings": { "width": 4, "height": 6, "unit": "inch", "dpmm": 8 },
+                "objects": [
+                    { "id": "e0e634fd-ee08-44b4-a0be-0bbd3541596c", "type": "text", "x": 90, "y": 100, "width": 0, "height": 24, "props": { "text": "New Text", "font": "0", "fontSize": 30, "orientation": "N" } },
+                    { "id": "01c42422-a6e6-4940-9adf-07b5cf0e8257", "type": "text", "x": 120, "y": 180, "width": 0, "height": 24, "props": { "text": "New Text", "font": "0", "fontSize": 30, "orientation": "N" } },
+                    { "id": "3484a215-db16-4f7a-ad25-8c8fcd8f5864", "type": "text", "x": 50, "y": 50, "width": 133, "height": 33, "props": { "text": "New Text", "font": "0", "fontSize": 30, "orientation": "N" } }
+                ]
+            }
+        ]
+    },
+    after
+    {
+        "version": "1.1",
+        "metadata": { "name": "New Project", "created": 1765000813806, "author": "User" },
+        "labels": [
+            {
+                "id": "03d1e02f-9691-48ac-8fdf-043e9f925201",
+                "name": "Label 1",
+                "settings": { "width": 4, "height": 6, "unit": "inch", "dpmm": 8 },
+                "objects": [
+                    { "id": "e0e634fd-ee08-44b4-a0be-0bbd3541596c", "type": "text", "x": 90, "y": 100, "width": 0, "height": 24, "props": { "text": "New Text", "font": "0", "fontSize": 30, "orientation": "N" } },
+                    { "id": "01c42422-a6e6-4940-9adf-07b5cf0e8257", "type": "text", "x": 120, "y": 180, "width": 0, "height": 24, "props": { "text": "New Text", "font": "0", "fontSize": 30, "orientation": "N" } },
+                    { "id": "3484a215-db16-4f7a-ad25-8c8fcd8f5864", "type": "text", "x": 50, "y": 50, "width": 0, "height": 24, "props": { "text": "New Text", "font": "0", "fontSize": 30, "orientation": "N" } }
+                ]
+            }
+        ]
+    }
+]

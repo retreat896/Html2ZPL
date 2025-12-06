@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ObjectRegistry from '../classes/ObjectRegistry';
 import { getZplCoordinates, getLabelDimensionsInDots } from '../utils/zplMath';
+import { parseZPL } from '../utils/zplParser';
 
 const ProjectContext = createContext();
 
@@ -10,24 +11,71 @@ export const useProject = () => useContext(ProjectContext);
 const DEFAULT_LABEL_SETTINGS = { width: 4, height: 6, unit: 'inch', dpmm: 8 };
 
 export const ProjectProvider = ({ children }) => {
-    const [project, setProject] = useState({
-        version: '1.1',
-        metadata: {
-            name: 'New Project',
-            created: Date.now(),
-            author: 'User'
-        },
-        labels: [
-            {
-                id: uuidv4(),
-                name: 'Label 1',
-                settings: { ...DEFAULT_LABEL_SETTINGS },
-                objects: []
+    const rehydrateProject = (projectData) => {
+        if (!projectData || !projectData.labels) return projectData;
+
+        const rehydratedLabels = projectData.labels.map((label) => {
+            const rehydratedObjects = label.objects.map((obj) => {
+                const def = ObjectRegistry.get(obj.type);
+                if (def && def.class) {
+                    // Flatten props: merge obj (x,y,width) with obj.props (text, font, etc.)
+                    // The constructor usually expects all properties at the top level
+                    const flattenedProps = { ...obj, ...(obj.props || {}) };
+                    const instance = new def.class(flattenedProps);
+                    // Ensure ID and other base properties are preserved strictly
+                    instance.id = obj.id;
+                    instance.x = obj.x;
+                    instance.y = obj.y;
+                    instance.width = obj.width;
+                    instance.height = obj.height;
+                    return instance;
+                }
+                return obj;
+            });
+            return { ...label, objects: rehydratedObjects };
+        });
+
+        return { ...projectData, labels: rehydratedLabels };
+    };
+
+    const getInitialProject = () => {
+        const saved = localStorage.getItem('html2zpl_project');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return rehydrateProject(parsed);
+            } catch (e) {
+                console.error('Failed to parse saved project', e);
             }
-        ]
+        }
+        return {
+            version: '1.1',
+            metadata: {
+                name: 'New Project',
+                created: Date.now(),
+                author: 'User',
+            },
+            labels: [
+                {
+                    id: uuidv4(),
+                    name: 'Label 1',
+                    settings: { ...DEFAULT_LABEL_SETTINGS },
+                    objects: [],
+                },
+            ],
+        };
+    };
+
+    const [project, setProject] = useState(getInitialProject);
+
+    const [activeLabelId, setActiveLabelId] = useState(() => {
+        // Initialize active label ID based on the loaded project
+        if (project.labels && project.labels.length > 0) {
+            return project.labels[0].id;
+        }
+        return null;
     });
 
-    const [activeLabelId, setActiveLabelId] = useState(project.labels[0].id);
     const [selectedObjectId, setSelectedObjectId] = useState(null);
     const [editorSettings, setEditorSettings] = useState({
         confineToLabel: true,
@@ -35,19 +83,19 @@ export const ProjectProvider = ({ children }) => {
         showGrid: true,
         snapToGrid: true,
         gridSize: 10, // Pixels
-        showHtmlObjects: true
+        showHtmlObjects: true,
     });
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    const activeLabel = project.labels.find(l => l.id === activeLabelId);
+    const activeLabel = project.labels.find((l) => l.id === activeLabelId);
 
     const addLabel = () => {
         const newLabel = {
             id: uuidv4(),
             name: `Label ${project.labels.length + 1}`,
             settings: { ...DEFAULT_LABEL_SETTINGS },
-            objects: []
+            objects: [],
         };
         setProject({ ...project, labels: [...project.labels, newLabel] });
         setActiveLabelId(newLabel.id);
@@ -56,11 +104,11 @@ export const ProjectProvider = ({ children }) => {
     const deleteLabel = (id) => {
         if (project.labels.length <= 1) {
             // Don't allow deleting the last label
-            return; 
+            return;
         }
-        const newLabels = project.labels.filter(l => l.id !== id);
+        const newLabels = project.labels.filter((l) => l.id !== id);
         setProject({ ...project, labels: newLabels });
-        
+
         if (activeLabelId === id) {
             setActiveLabelId(newLabels[0].id);
         }
@@ -78,7 +126,7 @@ export const ProjectProvider = ({ children }) => {
         const defaultProps = { x: 50, y: 50, ...extraProps };
         const newObj = new definition.class(defaultProps);
 
-        const updatedLabels = project.labels.map(label => {
+        const updatedLabels = project.labels.map((label) => {
             if (label.id === activeLabelId) {
                 return { ...label, objects: [...label.objects, newObj] };
             }
@@ -90,9 +138,9 @@ export const ProjectProvider = ({ children }) => {
     };
 
     const updateObject = (id, props) => {
-        const updatedLabels = project.labels.map(label => {
+        const updatedLabels = project.labels.map((label) => {
             if (label.id === activeLabelId) {
-                const updatedObjects = label.objects.map(obj => {
+                const updatedObjects = label.objects.map((obj) => {
                     if (obj.id === id) {
                         const newObj = Object.create(Object.getPrototypeOf(obj));
                         Object.assign(newObj, obj, props);
@@ -188,6 +236,103 @@ export const ProjectProvider = ({ children }) => {
         return zpl;
     };
 
+    const saveProject = () => {
+        const json = JSON.stringify(project);
+        const base64 = btoa(json);
+
+        // Generate ZPL for the active label to serve as the "preview" or printable part
+        const zplContent = generateZPL(activeLabelId);
+
+        // Embed the project data in a comment block
+        // Using a unique delimiter to make parsing easier
+        const fileContent = `${zplContent}\n^FX HEADER:HTML2ZPL:DATA:START:${base64}:END ^FS`;
+
+        const blob = new Blob([fileContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${project.metadata.name || 'label-project'}.zpl`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const loadProject = (fileText) => {
+        try {
+            const match = fileText.match(/HEADER:HTML2ZPL:DATA:START:(.*?):END/);
+            if (match && match[1]) {
+                const json = atob(match[1]);
+                const loadedProject = JSON.parse(json);
+
+                // Basic validation
+                if (!loadedProject.labels || !Array.isArray(loadedProject.labels)) {
+                    throw new Error('Invalid project format');
+                }
+
+                // Rehydrate objects
+                const finalProject = rehydrateProject(loadedProject);
+                setProject(finalProject);
+
+                // Restore active label if possible, otherwise first label
+                if (finalProject.labels.length > 0) {
+                    setActiveLabelId(finalProject.labels[0].id);
+                }
+            } else {
+                // Fallback: Parse ZPL commands
+                console.log('No embedded data found, attempting to parse ZPL...');
+
+                // We need to determine settings from the ZPL if possible, or use defaults/current
+                // For now, we'll use the current active label's settings or defaults
+                // Ideally, we should parse ^PW and ^LL to guess dimensions
+
+                // Simple regex to find ^PW and ^LL
+                const pwMatch = fileText.match(/\^PW(\d+)/);
+                const llMatch = fileText.match(/\^LL(\d+)/);
+
+                let settings = { ...DEFAULT_LABEL_SETTINGS };
+
+                // If we have an active label, use its settings as a base
+                if (activeLabel) {
+                    settings = { ...activeLabel.settings };
+                }
+
+                // If we found dimensions in ZPL, we might want to update settings,
+                // but converting back from dots to inches/mm without knowing the original unit/dpmm is tricky.
+                // For now, we will rely on the provided settings for coordinate conversion.
+
+                const objects = parseZPL(fileText, settings);
+
+                if (objects.length > 0) {
+                    // Create a new label with these objects
+                    const newLabel = {
+                        id: uuidv4(),
+                        name: 'Imported Label',
+                        settings: settings,
+                        objects: objects,
+                    };
+
+                    setProject((prev) => ({
+                        ...prev,
+                        labels: [...prev.labels, newLabel],
+                    }));
+                    setActiveLabelId(newLabel.id);
+                    alert('Imported ZPL as a new label. Note: Some settings may need adjustment.');
+                } else {
+                    alert('No recognized objects found in ZPL file.');
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load project:', e);
+            alert('Failed to load project. The file might be corrupted.');
+        }
+    };
+
+    // Auto-save to LocalStorage
+    React.useEffect(() => {
+        localStorage.setItem('html2zpl_project', JSON.stringify(project));
+    }, [project]);
+
     return (
         <ProjectContext.Provider
             value={{
@@ -209,6 +354,8 @@ export const ProjectProvider = ({ children }) => {
                 updateProjectMeta,
                 renameLabel,
                 generateZPL,
+                saveProject,
+                loadProject,
                 isPreviewOpen,
                 setIsPreviewOpen,
             }}>

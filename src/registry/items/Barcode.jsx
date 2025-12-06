@@ -2,7 +2,7 @@ import React from 'react';
 import LabelObject from '../../classes/LabelObject';
 
 // --- Logic ---
-class BarcodeObject extends LabelObject {
+export class BarcodeObject extends LabelObject {
     constructor(props = {}) {
         super('barcode', props);
         this.data = props.data || '12345678';
@@ -12,9 +12,9 @@ class BarcodeObject extends LabelObject {
         this.showText = props.showText !== undefined ? props.showText : true;
     }
 
-    toZPL() {
+    toZPL(index) {
         let command = '';
-        
+
         switch (this.barcodeType) {
             case 'code128':
                 // ^BCo,h,f,g,e,m
@@ -31,7 +31,7 @@ class BarcodeObject extends LabelObject {
 
         const dataField = this.barcodeType === 'qrcode' ? `^FDQA,${this.data}^FS` : `^FD${this.data}^FS`;
 
-        return `^FX Barcode Object ID: ${this.id} Z:${index}\n^FO${this.x},${this.y}${command}${dataField}`;
+        return `^FX Barcode Object ID: ${this.id} Z:${index} W:${this.width} H:${this.height}\n^FO${this.x},${this.y}${command}${dataField}`;
     }
 
     getProps() {
@@ -40,30 +40,30 @@ class BarcodeObject extends LabelObject {
             barcodeType: this.barcodeType,
             height: this.height,
             width: this.width,
-            showText: this.showText
+            showText: this.showText,
         };
     }
 
     static get properties() {
         return [
             { name: 'data', type: 'text', label: 'Data' },
-            { 
-                name: 'barcodeType', 
-                type: 'select', 
-                label: 'Type', 
+            {
+                name: 'barcodeType',
+                type: 'select',
+                label: 'Type',
                 options: [
                     { value: 'code128', label: 'Code 128' },
-                    { value: 'qrcode', label: 'QR Code' }
-                ] 
+                    { value: 'qrcode', label: 'QR Code' },
+                ],
             },
             {
                 name: 'dimensions',
                 type: 'row',
                 fields: [
                     { name: 'width', type: 'number', label: 'Mod Width', min: 1 },
-                    { name: 'height', type: 'number', label: 'Height', min: 1 }
-                ]
-            }
+                    { name: 'height', type: 'number', label: 'Height', min: 1 },
+                ],
+            },
         ];
     }
 }

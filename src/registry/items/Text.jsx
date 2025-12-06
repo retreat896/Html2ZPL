@@ -3,19 +3,21 @@ import LabelObject from '../../classes/LabelObject';
 import { TEXT_PADDING_W, TEXT_PADDING_H, DISPLAY_DPI } from '../../constants/editor';
 
 // --- Logic ---
-class TextObject extends LabelObject {
+export class TextObject extends LabelObject {
     constructor(props = {}) {
         super('text', props);
         this.text = props.text || 'New Text';
         this.font = props.font || '0'; // ZPL font 0
         this.fontSize = props.fontSize || 30;
         this.orientation = props.orientation || 'N'; // N, R, I, B
+        this.width = props.width || 0;
+        this.height = props.height || 0;
     }
 
     toZPL(index) {
         // ^FOx,y^Afont,orientation,height,width^FDdata^FS
         // Use 0 for width to allow proportional scaling
-        return `^FX Text Object ID: ${this.id} Z:${index}\n^FO${this.x},${this.y}^A${this.font}${this.orientation},${this.fontSize}^FD${this.text}^FS`;
+        return `^FX Text Object ID: ${this.id} Z:${index} W:${this.width} H:${this.height}\n^FO${this.x},${this.y}^A${this.font}${this.orientation},${this.fontSize}^FD${this.text}^FS`;
     }
 
     getProps() {

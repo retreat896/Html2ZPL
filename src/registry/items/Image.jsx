@@ -9,6 +9,7 @@ class ImageObject extends LabelObject {
     constructor(props = {}) {
         super('image', props);
         this.src = props.src || '';
+        this.fileId = props.fileId || null;
         this.width = props.width || 100;
         this.height = props.height || 100;
         this.lockAspectRatio = props.lockAspectRatio !== undefined ? props.lockAspectRatio : true;
@@ -22,11 +23,11 @@ class ImageObject extends LabelObject {
 
     toZPL(index) {
         if (!this.zplData) {
-            return `^FX Image Object ID: ${this.id} Z:${index} (No Data)^FS`;
+            return `^FX Image Object ID: ${this.id} FileID: ${this.fileId} Z:${index} (No Data)^FS`;
         }
 
         // ^GFA,totalBytes,totalBytes,bytesPerRow,data
-        return `^FX Image Object ID: ${this.id} Z:${index}\n^FO${this.x},${this.y}^GFA,${this.totalBytes},${this.totalBytes},${this.bytesPerRow},${this.zplData}^FS`;
+        return `^FX Image Object ID: ${this.id} FileID: ${this.fileId} Z:${index}\n^FO${this.x},${this.y}^GFA,${this.totalBytes},${this.totalBytes},${this.bytesPerRow},${this.zplData}^FS`;
     }
 
     resize(handle, delta, settings, initialProps) {
@@ -160,6 +161,19 @@ class ImageObject extends LabelObject {
         }
 
         return newProps;
+    }
+    getProps() {
+        return {
+            src: this.src,
+            fileId: this.fileId,
+            width: this.width,
+            height: this.height,
+            lockAspectRatio: this.lockAspectRatio,
+            threshold: this.threshold,
+            zplData: this.zplData,
+            totalBytes: this.totalBytes,
+            bytesPerRow: this.bytesPerRow
+        };
     }
 
     static get properties() {

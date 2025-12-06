@@ -15,7 +15,7 @@ class GraphicObject extends LabelObject {
         this.lineOrientation = props.lineOrientation || 'L'; // L=Left, R=Right, for line
     }
 
-    toZPL() {
+    toZPL(index) {
         let command = '';
 
         switch (this.shape) {
@@ -50,16 +50,16 @@ class GraphicObject extends LabelObject {
             thickness: this.thickness,
             color: this.color,
             rounding: this.rounding,
-            lineOrientation: this.lineOrientation
+            lineOrientation: this.lineOrientation,
         };
     }
 
     resize(handle, delta, settings, initialProps) {
         const { dx, dy } = delta;
         const { snapToGrid, gridSize, confineToLabel, bleed, labelDim } = settings;
-        
+
         let newProps = {};
-        
+
         // Calculate new dimensions based on handle
         let newWidth = initialProps.width;
         let newHeight = initialProps.height;
@@ -97,14 +97,13 @@ class GraphicObject extends LabelObject {
                 if (initialProps.y + newHeight > maxY) {
                     newHeight = maxY - initialProps.y;
                 }
-                
+
                 // Re-enforce aspect ratio if it was clamped
                 if (this.shape === 'circle') {
                     const size = Math.min(newWidth, newHeight);
                     newWidth = size;
                     newHeight = size;
                 }
-
             } else if (handle === 'tl') {
                 const brX = initialProps.x + initialProps.width;
                 const brY = initialProps.y + initialProps.height;
@@ -144,51 +143,51 @@ class GraphicObject extends LabelObject {
                 // Snap position
                 newX = snap(newX, gridSize);
                 newY = snap(newY, gridSize);
-                
+
                 // Recalculate size based on snapped position to maintain BR anchor
                 const brX = initialProps.x + initialProps.width;
                 const brY = initialProps.y + initialProps.height;
-                
+
                 newWidth = brX - newX;
                 newHeight = brY - newY;
             } else {
                 newWidth = snap(newWidth, gridSize);
                 newHeight = snap(newHeight, gridSize);
             }
-            
+
             // Re-enforce circle constraint after snapping
             if (this.shape === 'circle') {
-                 const size = Math.max(newWidth, newHeight);
-                 newWidth = size;
-                 newHeight = size;
-                 
-                 if (handle === 'tl') {
+                const size = Math.max(newWidth, newHeight);
+                newWidth = size;
+                newHeight = size;
+
+                if (handle === 'tl') {
                     const brX = initialProps.x + initialProps.width;
                     const brY = initialProps.y + initialProps.height;
                     newX = brX - newWidth;
                     newY = brY - newHeight;
-                 }
+                }
             }
         }
 
         // Final Minimum Size Check
         newWidth = Math.max(10, newWidth);
         newHeight = Math.max(10, newHeight);
-        
+
         if (this.shape === 'circle') {
             newWidth = Math.max(newWidth, newHeight);
             newHeight = newWidth;
-             if (handle === 'tl') {
+            if (handle === 'tl') {
                 const brX = initialProps.x + initialProps.width;
                 const brY = initialProps.y + initialProps.height;
                 newX = brX - newWidth;
                 newY = brY - newHeight;
-             }
+            }
         }
 
         newProps.width = newWidth;
         newProps.height = newHeight;
-        
+
         if (handle === 'tl') {
             newProps.x = newX;
             newProps.y = newY;
@@ -199,53 +198,53 @@ class GraphicObject extends LabelObject {
 
     static get properties() {
         return [
-            { 
-                name: 'shape', 
-                type: 'select', 
-                label: 'Shape', 
+            {
+                name: 'shape',
+                type: 'select',
+                label: 'Shape',
                 options: [
                     { value: 'box', label: 'Box' },
                     { value: 'circle', label: 'Circle' },
                     { value: 'ellipse', label: 'Ellipse' },
-                    { value: 'line', label: 'Diagonal Line' }
-                ] 
+                    { value: 'line', label: 'Diagonal Line' },
+                ],
             },
             {
                 name: 'dimensions',
                 type: 'row',
                 fields: [
                     { name: 'width', type: 'number', label: 'Width', min: 1 },
-                    { name: 'height', type: 'number', label: 'Height', min: 1 }
-                ]
+                    { name: 'height', type: 'number', label: 'Height', min: 1 },
+                ],
             },
             { name: 'thickness', type: 'number', label: 'Thickness', min: 1 },
-            { 
-                name: 'color', 
-                type: 'select', 
-                label: 'Color', 
+            {
+                name: 'color',
+                type: 'select',
+                label: 'Color',
                 options: [
                     { value: 'B', label: 'Black' },
-                    { value: 'W', label: 'White' }
-                ] 
+                    { value: 'W', label: 'White' },
+                ],
             },
-            { 
-                name: 'rounding', 
-                type: 'number', 
-                label: 'Rounding (0-8)', 
-                min: 0, 
-                max: 8, 
-                showIf: (obj) => obj.shape === 'box' 
+            {
+                name: 'rounding',
+                type: 'number',
+                label: 'Rounding (0-8)',
+                min: 0,
+                max: 8,
+                showIf: (obj) => obj.shape === 'box',
             },
-            { 
-                name: 'lineOrientation', 
-                type: 'select', 
-                label: 'Line Orientation', 
+            {
+                name: 'lineOrientation',
+                type: 'select',
+                label: 'Line Orientation',
                 options: [
                     { value: 'L', label: 'Left (TL-BR)' },
-                    { value: 'R', label: 'Right (TR-BL)' }
+                    { value: 'R', label: 'Right (TR-BL)' },
                 ],
-                showIf: (obj) => obj.shape === 'line'
-            }
+                showIf: (obj) => obj.shape === 'line',
+            },
         ];
     }
 }

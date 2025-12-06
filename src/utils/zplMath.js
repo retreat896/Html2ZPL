@@ -59,3 +59,41 @@ export const getZplCoordinates = (object, labelSettings) => {
 
     return convertedObj;
 };
+
+/**
+ * Converts a value from printer dots to display pixels.
+ * @param {number} value - The value in printer dots.
+ * @param {number} dpmm - Dots per millimeter.
+ * @param {string} unit - The unit of the label dimensions.
+ * @returns {number} - The value in display pixels.
+ */
+export const convertDotsToPixels = (value, dpmm, unit) => {
+    if (typeof value !== 'number') return value;
+
+    const displayPixelsPerUnit = unit === 'inch' ? DISPLAY_DPI : (DISPLAY_DPI / 25.4);
+    const printerDotsPerUnit = unit === 'inch' ? (25.4 * dpmm) : dpmm;
+    const conversionRatio = displayPixelsPerUnit / printerDotsPerUnit;
+
+    return Math.floor(value * conversionRatio);
+};
+
+/**
+ * Converts an object's properties from printer dots to display pixels.
+ * @param {object} object - The object with dot coordinates.
+ * @param {object} labelSettings - The label settings.
+ * @returns {object} - A new object with pixel coordinates.
+ */
+export const getEditorCoordinates = (object, labelSettings) => {
+    const { dpmm, unit } = labelSettings;
+    const convertedObj = { ...object };
+
+    const propsToConvert = ['x', 'y', 'width', 'height', 'thickness', 'fontSize'];
+
+    propsToConvert.forEach(prop => {
+        if (typeof convertedObj[prop] === 'number') {
+            convertedObj[prop] = convertDotsToPixels(convertedObj[prop], dpmm, unit);
+        }
+    });
+
+    return convertedObj;
+};

@@ -80,11 +80,6 @@ export default function Editor() {
             const dataUrl = event.target.result;
             const img = new Image();
             img.onload = () => {
-                // Default to image dimensions, but cap at label size?
-                // Let's just use image dimensions for now, user can resize.
-                // Or maybe cap at 200px for usability?
-                // Let's use natural dimensions but ensure it fits somewhat?
-                // No, let's just use natural dimensions.
                 addObject('image', {
                     src: dataUrl,
                     width: img.width,
@@ -99,19 +94,11 @@ export default function Editor() {
         e.target.value = '';
     };
 
-    // Calculate Label Dimensions in Pixels (using fixed 100 DPI for display)
-    // DISPLAY_DPI imported from constants
-
     const getLabelDimensions = () => {
         if (!activeLabel) return { width: 0, height: 0 };
         const { width, height, unit, dpmm } = activeLabel.settings;
 
-        // Calculate ZPL dimensions first to ensure aspect ratio matches exactly
         const { width: zplWidth, height: zplHeight } = getLabelDimensionsInDots(width, height, dpmm, unit);
-
-        // Calculate scale factor to fit ZPL dots into Display DPI
-        // ZPL dots / Printer DPI = Inches
-        // Inches * Display DPI = Display Pixels
 
         const printerDotsPerUnit = unit === 'inch' ? 25.4 * dpmm : dpmm;
         const scale = DISPLAY_DPI / printerDotsPerUnit;
@@ -188,32 +175,14 @@ export default function Editor() {
     const handleObjectMouseDown = (e, objId, currentX, currentY) => {
         e.stopPropagation();
 
-        // Get actual DOM dimensions from the inner wrapper to ensure logical size
-        // The currentTarget is the outer wrapper.
         const innerWrapper = e.currentTarget.querySelector('[data-internal-wrapper="true"]');
         const rect = innerWrapper ? innerWrapper.getBoundingClientRect() : e.currentTarget.getBoundingClientRect();
-
-        // If we are using innerWrapper, we need to be careful about rotation.
-        // getBoundingClientRect returns the bounding box of the transformed element (rotated).
-        // So if rotated 90deg, width is height.
-
-        // Actually, for dragging, we just need the visual bounding box?
-        // No, setObjDimensions is used for confinement and grid snapping.
-        // And updateObject updates the state.
-
-        // If we want logical dimensions:
-        // We can use offsetWidth/offsetHeight of the innerWrapper (if it's block-level and not transformed? No, transform affects visual but not layout size usually, but here it's max-content).
-
-        // Let's rely on the values we have in state if possible, or calculate from rect.
-        // If we use offsetWidth/Height of innerWrapper, it should be unrotated size.
 
         const width = innerWrapper ? innerWrapper.offsetWidth : rect.width / zoomLevel;
         const height = innerWrapper ? innerWrapper.offsetHeight : rect.height / zoomLevel;
 
         setObjDimensions({ width, height });
 
-        // Update object state with current dimensions (useful for validation)
-        // We only do this if the dimensions are significantly different to avoid spam
         if (Math.abs((objDimensions.width || 0) - width) > 1 || Math.abs((objDimensions.height || 0) - height) > 1) {
             updateObject(objId, { width, height });
         }
@@ -230,8 +199,7 @@ export default function Editor() {
         setResizeHandle(handle);
         setResizeStartPos({ x: e.clientX, y: e.clientY });
 
-        // Capture initial properties needed for resizing
-        const element = e.currentTarget.parentElement; // The object container
+        const element = e.currentTarget.parentElement;
         const rect = element.getBoundingClientRect();
 
         setInitialObjProps({
@@ -245,122 +213,82 @@ export default function Editor() {
         });
     };
 
+    // Ref to hold current objects for the ResizeObserver to access without triggering re-renders
+    const activeLabelRef = useRef(activeLabel);
+    useEffect(() => {
+        activeLabelRef.current = activeLabel;
+    }, [activeLabel]);
+
     // ResizeObserver to keep object dimensions up to date in state
     useEffect(() => {
-        if (!selectedObjectId || !canvasContainerRef.current) return;
+        if (!canvasContainerRef.current) return;
 
-        // Find the DOM element for the selected object
-        // We can't easily use a ref for dynamic list, so we query selector
-        // We added a specific class or ID? No, but we can find by data attribute if we add one,
-        // or just rely on the fact that we render them.
-        // Let's add a data-id to the object container in the render loop.
-        // Observe the inner wrapper to get logical (unrotated) dimensions
-        const element = canvasContainerRef.current.querySelector(`[data-object-id="${selectedObjectId}"] [data-internal-wrapper="true"]`);
+        const observer = new ResizeObserver((entries) => {
+            entries.forEach((entry) => {
+                const element = entry.target;
+                const objectContainer = element.closest('[data-object-id]');
+                const objectId = objectContainer?.getAttribute('data-object-id');
 
-        if (element) {
-            const observer = new ResizeObserver((entries) => {
-                for (const entry of entries) {
+                if (objectId && activeLabelRef.current) {
+                    // Skip if currently resizing this object to prevent fighting
+                    if (isResizing && objectId === selectedObjectId) return;
+
                     const { width: logicalWidth, height: logicalHeight } = entry.contentRect;
-                    const width = logicalWidth;
-                    const height = logicalHeight;
+                    const width = Math.round(logicalWidth);
+                    const height = Math.round(logicalHeight);
 
-                    setObjDimensions({ width, height });
-
-                    const currentObj = activeLabel.objects.find((o) => o.id === selectedObjectId);
-                    if (currentObj) {
-                        // Auto-Fit Text Logic
-                        if (currentObj.type === 'text' && editorSettings.confineToLabel) {
-                            const bleed = editorSettings.bleed || 0;
-                            const isVertical = ['R', 'B'].includes(currentObj.orientation);
-
-                            // Calculate visual dimensions/position based on orientation
-                            // If vertical, width/height are swapped visually
-                            const visualWidth = isVertical ? height : width;
-                            const visualHeight = isVertical ? width : height;
-
-                            // Calculate visual X/Y (top-left of bounding box)
-                            // Note: Our rotation logic keeps the anchor at top-left, but the visual box extends:
-                            // N: x to x+w, y to y+h
-                            // R: x to x+h, y to y+w (visual box is x,y to x+h,y+w)
-                            // I: x to x+w, y to y+h (visual box is x,y to x+w,y+h) - Wait, I rotation shifts by w,h.
-                            // Let's re-verify the visual bounding box relative to x,y.
-
-                            // With our new rotation logic:
-                            // N: translate(0,0) -> box at x,y
-                            // R: translate(h,0) rotate(90) -> box from x to x+h, y to y+w?
-                            //    Rotate 90 around TL: (0,0) -> (0,0), (w,0) -> (0,w), (0,h) -> (-h,0).
-                            //    Translate(h,0): (0,0)->(h,0), (-h,0)->(0,0).
-                            //    So visual box is [0, h] x [0, w] relative to anchor? Yes.
-                            // I: translate(w,h) rotate(180) -> box from x to x+w, y to y+h?
-                            //    Rotate 180 around TL: (w,h) -> (-w,-h).
-                            //    Translate(w,h): (-w,-h) -> (0,0).
-                            //    So visual box is [0, w] x [0, h] relative to anchor? Yes.
-                            // B: translate(0,w) rotate(270) -> box from x to x+h, y to y+w?
-                            //    Rotate 270 around TL: (0,h) -> (h,0), (w,0) -> (0,-w).
-                            //    Translate(0,w): (0,-w) -> (0,0).
-                            //    So visual box is [0, h] x [0, w] relative to anchor? Yes.
-
-                            // Conclusion: The visual bounding box is ALWAYS [x, x + visualWidth] and [y, y + visualHeight].
-                            // So we just need to check if x + visualWidth > labelWidth, etc.
-
-                            const maxX = labelDim.width + bleed;
-                            const maxY = labelDim.height + bleed;
-                            const minX = -bleed;
-                            const minY = -bleed;
-
-                            const currentRight = currentObj.x + visualWidth;
-                            const currentBottom = currentObj.y + visualHeight;
-
-                            let overflowRatio = 1;
-
-                            if (currentRight > maxX) {
-                                const availableW = Math.max(0, maxX - currentObj.x);
-                                overflowRatio = Math.min(overflowRatio, availableW / visualWidth);
-                            }
-                            if (currentBottom > maxY) {
-                                const availableH = Math.max(0, maxY - currentObj.y);
-                                overflowRatio = Math.min(overflowRatio, availableH / visualHeight);
-                            }
-
-                            // Also check left/top overflow (though resizing usually pushes right/down, typing pushes right)
-                            // If x < minX, we can't shrink font to fix it (unless we move x, but we only change font size).
-                            // So we ignore left/top overflow for auto-shrink?
-                            // Or should we shrink if it's too big to fit even if moved?
-                            // The request is "change font size until it fits".
-                            // If x is negative, shrinking font reduces width, but x stays negative.
-                            // So right edge moves left.
-                            // Let's focus on Right/Bottom overflow which is caused by typing.
-
-                            if (overflowRatio < 1) {
-                                const newFontSize = Math.floor(currentObj.fontSize * overflowRatio);
-                                if (newFontSize < currentObj.fontSize && newFontSize >= 5) {
-                                    updateObject(selectedObjectId, { fontSize: newFontSize });
-                                    return; // Skip updating width/height this cycle, wait for re-render
-                                }
+                    // Debug Log
+                    if (width === 0) {
+                        const fallBackWidth = element.offsetWidth; // Try obtaining offsetWidth as fallback
+                        if (fallBackWidth > 0) {
+                            // Use fallback will be handled below
+                        } else {
+                            // If completely 0, check if we might have inner content size
+                            const inner = element.querySelector('[data-internal-wrapper="true"]');
+                            if (inner && inner.offsetWidth > 0) {
+                                // Use inner width if available
+                            } else {
+                                console.warn(`[ResizeObserver] Zero width detected for ${objectId}:`, entry.contentRect, 'OffsetWidth:', element.offsetWidth, 'ScrollWidth:', element.scrollWidth, 'InnerOffset:', inner?.offsetWidth);
                             }
                         }
+                    }
 
-                        const diffW = Math.abs((currentObj.width || 0) - width);
-                        const diffH = Math.abs((currentObj.height || 0) - height);
+                    const inner = element.querySelector('[data-internal-wrapper="true"]');
+                    let finalWidth = width > 0 ? width : element.offsetWidth > 0 ? element.offsetWidth : inner?.offsetWidth || 0;
+                    let finalHeight = height > 0 ? height : element.offsetHeight > 0 ? element.offsetHeight : inner?.offsetHeight || 0;
 
-                        if (diffW > 1 || diffH > 1) {
-                            if (currentObj.type === 'text') {
-                                updateObject(selectedObjectId, { width, height });
-                            }
+                    const currentObj = activeLabelRef.current.objects.find((o) => o.id === objectId);
+
+                    if (currentObj) {
+                        // Safety check: specific to the user's report.
+                        // If we are about to set width/height to 0, but it currently has a valid dimension, ignore the update.
+                        // This prevents a render glitch (hidden/loading) from wiping out the saved dimensions.
+                        if (finalWidth === 0 && (currentObj.width || 0) > 0) {
+                            console.warn(`[ResizeObserver] Preventing overwrite of valid width ${currentObj.width} with 0 for ${objectId}`);
+                            return;
+                        }
+
+                        // Update selected object dimensions state for dragging/resizing logic
+                        if (objectId === selectedObjectId) {
+                            setObjDimensions({ width: finalWidth, height: finalHeight });
+                        }
+
+                        const diffW = Math.abs((currentObj.width || 0) - finalWidth);
+                        const diffH = Math.abs((currentObj.height || 0) - finalHeight);
+
+                        if (diffW >= 1 || diffH >= 1) {
+                            updateObject(objectId, { width: finalWidth, height: finalHeight });
                         }
                     }
                 }
             });
+        });
 
-            observer.observe(element);
-            return () => observer.disconnect();
-        }
-    }, [selectedObjectId, zoomLevel, activeLabel]); // activeLabel dependency might be too heavy?
-    // If activeLabel changes, we re-run. If updateObject changes activeLabel, we re-run.
-    // This loop is dangerous.
-    // We should NOT depend on activeLabel for the observer setup, but we need it for the check.
-    // Better: Use a ref to hold the current activeLabel or objects to avoid re-running effect?
-    // Or just trust that if size matches, we don't call updateObject, so no change, no re-render loop.
+        const wrappers = canvasContainerRef.current.querySelectorAll('[data-internal-wrapper="true"]');
+        wrappers.forEach((el) => observer.observe(el));
+
+        return () => observer.disconnect();
+    }, [activeLabel?.objects.length, activeLabel?.objects.map((o) => o.id).join(','), selectedObjectId, isResizing]);
 
     const handleMouseMove = (e) => {
         if (isPanning) {
@@ -400,16 +328,11 @@ export default function Editor() {
             const dx = (e.clientX - resizeStartPos.x) / zoomLevel;
             const dy = (e.clientY - resizeStartPos.y) / zoomLevel;
 
-            // We need the class instance to call resize
-            // Currently activeLabel.objects contains plain objects (JSON)
-            // We need to get the class definition from registry and instantiate or call static
-            // But wait, the registry has the class.
             const objState = activeLabel.objects.find((o) => o.id === selectedObjectId);
             if (!objState) return;
 
             const def = ObjectRegistry.get(objState.type);
             if (def && def.class) {
-                // Instantiate to access the method (or make it static, but instance is better for state access if needed)
                 const instance = new def.class(objState);
 
                 const settings = {
@@ -423,9 +346,7 @@ export default function Editor() {
                 const delta = { dx, dy };
 
                 try {
-                    // console.log('Resizing:', objState.type, handle, delta, initialObjProps);
                     const newProps = instance.resize(resizeHandle, delta, settings, initialObjProps);
-                    // console.log('New Props:', newProps);
                     updateObject(selectedObjectId, newProps);
                 } catch (err) {
                     console.warn('Resize not implemented for this object type', err);
@@ -442,13 +363,11 @@ export default function Editor() {
         setInitialObjProps(null);
     };
 
-    // Keep handlers fresh for event listeners without re-binding
     const handlersRef = useRef({ move: handleMouseMove, up: handleMouseUp });
     useEffect(() => {
         handlersRef.current = { move: handleMouseMove, up: handleMouseUp };
     });
 
-    // Global Event Listeners for Dragging/Resizing
     useEffect(() => {
         if (isPanning || isDraggingObj || isResizing) {
             const onMove = (e) => handlersRef.current.move(e);
@@ -463,16 +382,6 @@ export default function Editor() {
         }
     }, [isPanning, isDraggingObj, isResizing]);
 
-    // Handle Label Switch (Immediate state update to hide old preview)
-    // Refactored to render-time update above to prevent flash
-    // React.useLayoutEffect(() => {
-    //     if (lastLabelIdRef.current !== activeLabelId) {
-    //         setIsPreviewLoading(true);
-    //         lastLabelIdRef.current = activeLabelId;
-    //     }
-    // }, [activeLabelId]);
-
-    // Update Preview on Interaction End
     useEffect(() => {
         if (!activeLabel || !activeLabelId || isDraggingObj || isResizing) return;
 
@@ -502,9 +411,9 @@ export default function Editor() {
             }
         };
 
-        const timeoutId = setTimeout(updatePreview, 500); // Debounce slightly
+        const timeoutId = setTimeout(updatePreview, 500);
         return () => clearTimeout(timeoutId);
-    }, [activeLabelId, activeLabel, isDraggingObj, isResizing, generateZPL]); // activeLabel changes on updateObject
+    }, [activeLabelId, activeLabel, isDraggingObj, isResizing, generateZPL]);
 
     return (
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -665,10 +574,12 @@ export default function Editor() {
                                     left: obj.x,
                                     top: obj.y,
                                     width: (() => {
+                                        if (isResizing && selectedObjectId === obj.id && obj.type === 'text') return 'auto';
                                         const isVertical = ['R', 'B'].includes(obj.orientation);
                                         return isVertical ? obj.height || 'auto' : obj.width || 'auto';
                                     })(),
                                     height: (() => {
+                                        if (isResizing && selectedObjectId === obj.id && obj.type === 'text') return 'auto';
                                         const isVertical = ['R', 'B'].includes(obj.orientation);
                                         return isVertical ? obj.width || 'auto' : obj.height || 'auto';
                                     })(),
