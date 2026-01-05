@@ -8,7 +8,7 @@ import { zplToBase64Async } from 'zpl-renderer-js';
 import { getLabelDimensionsInDots } from '../utils/zplMath';
 
 export default function Editor() {
-    const { activeLabel, activeLabelId, addObject, selectedObjectId, setSelectedObjectId, updateObject, reorderObject, editorSettings, setEditorSettings, generateZPL } = useProject();
+    const { activeLabel, activeLabelId, addObject, deleteObject, selectedObjectId, setSelectedObjectId, updateObject, reorderObject, editorSettings, setEditorSettings, generateZPL } = useProject();
     const [zoomLevel, setZoomLevel] = useState(1);
     const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
 
@@ -70,6 +70,25 @@ export default function Editor() {
         window.addEventListener('click', handleCloseContextMenu);
         return () => window.removeEventListener('click', handleCloseContextMenu);
     }, [contextMenu.visible]);
+
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                // Ignore if an input/textarea is focused
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    return;
+                }
+
+                if (selectedObjectId) {
+                    deleteObject(selectedObjectId);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedObjectId, deleteObject]);
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -646,6 +665,15 @@ export default function Editor() {
                     </button>
                     <button onClick={() => reorderObject(contextMenu.objectId, 'back')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                         Send to Back
+                    </button>
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                    <button
+                        onClick={() => {
+                            deleteObject(contextMenu.objectId);
+                            handleCloseContextMenu();
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        Delete
                     </button>
                 </div>
             )}

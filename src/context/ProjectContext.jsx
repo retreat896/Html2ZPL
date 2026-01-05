@@ -97,7 +97,7 @@ export const ProjectProvider = ({ children }) => {
             settings: { ...DEFAULT_LABEL_SETTINGS },
             objects: [],
         };
-        setProject({ ...project, labels: [...project.labels, newLabel] });
+        setProject((prev) => ({ ...prev, labels: [...prev.labels, newLabel] }));
         setActiveLabelId(newLabel.id);
     };
 
@@ -106,8 +106,10 @@ export const ProjectProvider = ({ children }) => {
             // Don't allow deleting the last label
             return;
         }
-        const newLabels = project.labels.filter((l) => l.id !== id);
-        setProject({ ...project, labels: newLabels });
+        setProject((prev) => {
+            const newLabels = prev.labels.filter((l) => l.id !== id);
+            return { ...prev, labels: newLabels };
+        });
 
         if (activeLabelId === id) {
             setActiveLabelId(newLabels[0].id);
@@ -126,86 +128,112 @@ export const ProjectProvider = ({ children }) => {
         const defaultProps = { x: 50, y: 50, ...extraProps };
         const newObj = new definition.class(defaultProps);
 
-        const updatedLabels = project.labels.map((label) => {
-            if (label.id === activeLabelId) {
-                return { ...label, objects: [...label.objects, newObj] };
-            }
-            return label;
+        setProject((prev) => {
+            const updatedLabels = prev.labels.map((label) => {
+                if (label.id === activeLabelId) {
+                    return { ...label, objects: [...label.objects, newObj] };
+                }
+                return label;
+            });
+            return { ...prev, labels: updatedLabels };
         });
-
-        setProject({ ...project, labels: updatedLabels });
         setSelectedObjectId(newObj.id);
     };
 
-    const updateObject = (id, props) => {
-        const updatedLabels = project.labels.map((label) => {
-            if (label.id === activeLabelId) {
-                const updatedObjects = label.objects.map((obj) => {
-                    if (obj.id === id) {
-                        const newObj = Object.create(Object.getPrototypeOf(obj));
-                        Object.assign(newObj, obj, props);
-                        return newObj;
-                    }
-                    return obj;
-                });
-                return { ...label, objects: updatedObjects };
-            }
-            return label;
+    const deleteObject = (id) => {
+        if (!activeLabel) return;
+        setProject((prev) => {
+            const updatedLabels = prev.labels.map((label) => {
+                if (label.id === activeLabelId) {
+                    const newObjects = label.objects.filter((o) => o.id !== id);
+                    return { ...label, objects: newObjects };
+                }
+                return label;
+            });
+            return { ...prev, labels: updatedLabels };
         });
-        setProject({ ...project, labels: updatedLabels });
+        if (selectedObjectId === id) {
+            setSelectedObjectId(null);
+        }
+    };
+
+    const updateObject = (id, props) => {
+        setProject((prev) => {
+            const updatedLabels = prev.labels.map((label) => {
+                if (label.id === activeLabelId) {
+                    const updatedObjects = label.objects.map((obj) => {
+                        if (obj.id === id) {
+                            const newObj = Object.create(Object.getPrototypeOf(obj));
+                            Object.assign(newObj, obj, props);
+                            return newObj;
+                        }
+                        return obj;
+                    });
+                    return { ...label, objects: updatedObjects };
+                }
+                return label;
+            });
+            return { ...prev, labels: updatedLabels };
+        });
     };
 
     const reorderObject = (id, action) => {
-        const updatedLabels = project.labels.map((label) => {
-            if (label.id === activeLabelId) {
-                const objects = [...label.objects];
-                const index = objects.findIndex((o) => o.id === id);
-                if (index === -1) return label;
+        setProject((prev) => {
+            const updatedLabels = prev.labels.map((label) => {
+                if (label.id === activeLabelId) {
+                    const objects = [...label.objects];
+                    const index = objects.findIndex((o) => o.id === id);
+                    if (index === -1) return label;
 
-                const obj = objects[index];
-                objects.splice(index, 1); // Remove object
+                    const obj = objects[index];
+                    objects.splice(index, 1); // Remove object
 
-                if (action === 'front') {
-                    objects.push(obj);
-                } else if (action === 'back') {
-                    objects.unshift(obj);
-                } else if (action === 'forward') {
-                    const newIndex = Math.min(index + 1, objects.length);
-                    objects.splice(newIndex, 0, obj);
-                } else if (action === 'backward') {
-                    const newIndex = Math.max(index - 1, 0);
-                    objects.splice(newIndex, 0, obj);
+                    if (action === 'front') {
+                        objects.push(obj);
+                    } else if (action === 'back') {
+                        objects.unshift(obj);
+                    } else if (action === 'forward') {
+                        const newIndex = Math.min(index + 1, objects.length);
+                        objects.splice(newIndex, 0, obj);
+                    } else if (action === 'backward') {
+                        const newIndex = Math.max(index - 1, 0);
+                        objects.splice(newIndex, 0, obj);
+                    }
+
+                    return { ...label, objects };
                 }
-
-                return { ...label, objects };
-            }
-            return label;
+                return label;
+            });
+            return { ...prev, labels: updatedLabels };
         });
-        setProject({ ...project, labels: updatedLabels });
     };
 
     const updateLabelSettings = (labelId, newSettings) => {
-        const updatedLabels = project.labels.map((label) => {
-            if (label.id === labelId) {
-                return { ...label, settings: { ...label.settings, ...newSettings } };
-            }
-            return label;
+        setProject((prev) => {
+            const updatedLabels = prev.labels.map((label) => {
+                if (label.id === labelId) {
+                    return { ...label, settings: { ...label.settings, ...newSettings } };
+                }
+                return label;
+            });
+            return { ...prev, labels: updatedLabels };
         });
-        setProject({ ...project, labels: updatedLabels });
     };
 
     const updateProjectMeta = (updates) => {
-        setProject({ ...project, metadata: { ...project.metadata, ...updates } });
+        setProject((prev) => ({ ...prev, metadata: { ...prev.metadata, ...updates } }));
     };
 
     const renameLabel = (labelId, newName) => {
-        const updatedLabels = project.labels.map((label) => {
-            if (label.id === labelId) {
-                return { ...label, name: newName };
-            }
-            return label;
+        setProject((prev) => {
+            const updatedLabels = prev.labels.map((label) => {
+                if (label.id === labelId) {
+                    return { ...label, name: newName };
+                }
+                return label;
+            });
+            return { ...prev, labels: updatedLabels };
         });
-        setProject({ ...project, labels: updatedLabels });
     };
 
     const generateZPL = (labelId) => {
@@ -348,6 +376,7 @@ export const ProjectProvider = ({ children }) => {
                 addLabel,
                 deleteLabel,
                 addObject,
+                deleteObject,
                 updateObject,
                 reorderObject,
                 updateLabelSettings,
