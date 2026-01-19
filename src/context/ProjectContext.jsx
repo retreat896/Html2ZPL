@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from './AuthContext';
 import ObjectRegistry from '../classes/ObjectRegistry';
 import { getZplCoordinates, getLabelDimensionsInDots } from '../utils/zplMath';
 import { parseZPL } from '../utils/zplParser';
@@ -264,6 +265,84 @@ export const ProjectProvider = ({ children }) => {
         return zpl;
     };
 
+    // Cloud Functions
+    const { token } = useAuth();
+    const API_URL = 'http://localhost:3000';
+
+    const fetchProjects = async () => {
+        if (!token) return [];
+        try {
+            const res = await fetch(`${API_URL}/projects`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed to fetch projects');
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
+    };
+
+    const saveToCloud = async (name) => {
+        if (!token) return { success: false, error: 'Not logged in' };
+        try {
+            // Update metadata name
+            const updatedProject = { ...project, metadata: { ...project.metadata, name } };
+            setProject(updatedProject);
+
+            const res = await fetch(`${API_URL}/projects`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    name,
+                    data: JSON.stringify(updatedProject),
+                }),
+            });
+
+            if (!res.ok) throw new Error('Failed to save project');
+            return { success: true };
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    };
+
+    const loadFromCloud = async (id) => {
+        if (!token) return { success: false, error: 'Not logged in' };
+        try {
+            const res = await fetch(`${API_URL}/projects/${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed to load project');
+            const data = await res.json();
+
+            const parsedProject = JSON.parse(data.data);
+            const rehydrated = rehydrateProject(parsedProject);
+            setProject(rehydrated);
+            if (rehydrated.labels.length > 0) setActiveLabelId(rehydrated.labels[0].id);
+
+            return { success: true };
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    };
+
+    const deleteCloudProject = async (id) => {
+        if (!token) return { success: false, error: 'Not logged in' };
+        try {
+            const res = await fetch(`${API_URL}/projects/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed to delete project');
+            return { success: true };
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    };
+
     const saveProject = () => {
         const json = JSON.stringify(project);
         const base64 = btoa(json);
@@ -356,7 +435,57 @@ export const ProjectProvider = ({ children }) => {
         }
     };
 
-    // Auto-save to LocalStorage
+    // Settings Sync
+    const saveSettingsToCloud = async (settings) => {
+        if (!token) return;
+        try {
+            await fetch(`${API_URL}/settings`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ settings })
+            });
+        } catch (e) {
+            console.error('Failed to save settings:', e);
+        }
+    };
+
+    // Load settings on login
+    React.useEffect(() => {
+        const loadSettings = async () => {
+            if (token) {
+                try {
+                    const res = await fetch(`${API_URL}/settings`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const cloudSettings = await res.json();
+                        if (Object.keys(cloudSettings).length > 0) {
+                            setEditorSettings(prev => ({ ...prev, ...cloudSettings }));
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to load settings:', e);
+                }
+            }
+        };
+        loadSettings();
+    }, [token]);
+
+    // Auto-save settings on change (Debounced)
+    React.useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (token) {
+                saveSettingsToCloud(editorSettings);
+            }
+        }, 1000); // Debounce 1s
+
+        return () => clearTimeout(timeoutId);
+    }, [editorSettings, token]);
+
+    // Auto-save Project to LocalStorage
     React.useEffect(() => {
         localStorage.setItem('html2zpl_project', JSON.stringify(project));
     }, [project]);
@@ -385,6 +514,10 @@ export const ProjectProvider = ({ children }) => {
                 generateZPL,
                 saveProject,
                 loadProject,
+                fetchProjects,
+                saveToCloud,
+                loadFromCloud,
+                deleteCloudProject,
                 isPreviewOpen,
                 setIsPreviewOpen,
             }}>

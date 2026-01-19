@@ -72,12 +72,9 @@ export class BarcodeObject extends LabelObject {
 export const BarcodeComponent = ({ object }) => {
     // Placeholder rendering for editor
     return (
-        <div className="flex flex-col items-center justify-center border border-gray-400 bg-gray-100 p-2 select-none"
-             style={{ height: object.height, minWidth: 100 }}>
+        <div className="flex flex-col items-center justify-center border border-gray-400 bg-gray-100 p-2 select-none" style={{ height: object.height, minWidth: 100 }}>
             <span className="text-xs font-mono mb-1">{object.barcodeType}</span>
-            <div className="h-full w-full bg-gray-300 flex items-center justify-center">
-                ||| || |||
-            </div>
+            <div className="h-full w-full bg-gray-300 flex items-center justify-center">| ||| || |</div>
             <span className="text-xs mt-1">{object.data}</span>
         </div>
     );

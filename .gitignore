@@ -1,2 +1,16 @@
 node_modules
 /dist
+
+# Environment Variables
+.env
+/backend/.env
+
+# Database
+*.db
+*.sqlite
+/backend/users.db
+/backend/users.db-journal
+
+# Misc
+.DS_Store
+.vscode
