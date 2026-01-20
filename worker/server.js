@@ -22,7 +22,7 @@ app.use('*', async (c, next) => {
 // Helper to get user from token (Hono jwt middleware puts payload in c.get('jwtPayload'))
 // But we need to configure the middleware first.
 
-app.post('/api/register', async (c) => {
+app.post('/register', async (c) => {
     const { username, password } = await c.req.json();
     if (!username || !password) return c.json({ error: 'Username and password are required' }, 400);
 
@@ -48,7 +48,7 @@ app.post('/api/register', async (c) => {
     }
 });
 
-app.post('/api/login', async (c) => {
+app.post('/login', async (c) => {
     const { username, password } = await c.req.json();
     if (!username || !password) return c.json({ error: 'Username and password are required' }, 400);
 
@@ -78,17 +78,17 @@ app.post('/api/login', async (c) => {
 // Protected Routes
 // We define a sub-app or just use middleware on paths
 // Hono JWT middleware:
-app.use('/api/projects/*', (c, next) => {
+app.use('/projects/*', (c, next) => {
     const jwtMiddleware = jwt({ secret: c.env.SECRET_KEY || 'your_secret_key_here' });
     return jwtMiddleware(c, next);
 });
-app.use('/api/settings', (c, next) => {
+app.use('/settings', (c, next) => {
     const jwtMiddleware = jwt({ secret: c.env.SECRET_KEY || 'your_secret_key_here' });
     return jwtMiddleware(c, next);
 });
 
 // Get all projects
-app.get('/api/projects', async (c) => {
+app.get('/projects', async (c) => {
     const payload = c.get('jwtPayload');
     try {
         const { results } = await c.env.DB.prepare('SELECT id, name, updated_at FROM zpl_projects WHERE user_id = ? ORDER BY updated_at DESC')
@@ -101,7 +101,7 @@ app.get('/api/projects', async (c) => {
 });
 
 // Save project
-app.post('/api/projects', async (c) => {
+app.post('/projects', async (c) => {
     const payload = c.get('jwtPayload');
     const { name, data, id } = await c.req.json();
 
@@ -134,7 +134,7 @@ app.post('/api/projects', async (c) => {
 });
 
 // Get specific project
-app.get('/api/projects/:id', async (c) => {
+app.get('/projects/:id', async (c) => {
     const payload = c.get('jwtPayload');
     const id = c.req.param('id');
     try {
@@ -149,7 +149,7 @@ app.get('/api/projects/:id', async (c) => {
 });
 
 // Delete project
-app.delete('/api/projects/:id', async (c) => {
+app.delete('/projects/:id', async (c) => {
     const payload = c.get('jwtPayload');
     const id = c.req.param('id');
     try {
@@ -164,7 +164,7 @@ app.delete('/api/projects/:id', async (c) => {
 });
 
 // Get User Settings
-app.get('/api/settings', async (c) => {
+app.get('/settings', async (c) => {
     const payload = c.get('jwtPayload');
     try {
         const row = await c.env.DB.prepare('SELECT settings FROM zpl_user_settings WHERE user_id = ?')
@@ -181,7 +181,7 @@ app.get('/api/settings', async (c) => {
 });
 
 // Update User Settings
-app.put('/api/settings', async (c) => {
+app.put('/settings', async (c) => {
     const payload = c.get('jwtPayload');
     const { settings } = await c.req.json();
     if (!settings) return c.json({ error: 'Settings required' }, 400);
