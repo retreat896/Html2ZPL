@@ -79,11 +79,11 @@ app.post('/login', async (c) => {
 // We define a sub-app or just use middleware on paths
 // Hono JWT middleware:
 app.use('/projects/*', (c, next) => {
-    const jwtMiddleware = jwt({ secret: c.env.SECRET_KEY || 'your_secret_key_here' });
+    const jwtMiddleware = jwt({ secret: c.env.SECRET_KEY || 'your_secret_key_here', alg: 'HS256' });
     return jwtMiddleware(c, next);
 });
 app.use('/settings', (c, next) => {
-    const jwtMiddleware = jwt({ secret: c.env.SECRET_KEY || 'your_secret_key_here' });
+    const jwtMiddleware = jwt({ secret: c.env.SECRET_KEY || 'your_secret_key_here', alg: 'HS256' });
     return jwtMiddleware(c, next);
 });
 
