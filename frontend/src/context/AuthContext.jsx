@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
 	const [token, setToken] = useState(localStorage.getItem("authToken"));
 	const [loading, setLoading] = useState(true);
 
-	const API_URL = import.meta.env.API_URL || "http://localhost:3000"; // Make sure this matches your backend
+	const API_URL = import.meta.env.API_URL || "/api"; 
 
 	useEffect(() => {
 		if (token) {

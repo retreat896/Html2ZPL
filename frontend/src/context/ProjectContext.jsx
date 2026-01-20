@@ -267,7 +267,7 @@ export const ProjectProvider = ({ children }) => {
 
     // Cloud Functions
     const { token } = useAuth();
-    const API_URL = import.meta.env.API_URL ?? 'http://localhost:3000';
+    const API_URL = import.meta.env.API_URL ?? "/api";
 
     const fetchProjects = async () => {
         if (!token) return [];
