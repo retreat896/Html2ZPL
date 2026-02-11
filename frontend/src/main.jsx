@@ -1,8 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
+import { HelmetProvider } from 'react-helmet-async';
+import App from './App.jsx';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import './index.css'
+import './index.css';
 
 import ObjectRegistry from './classes/ObjectRegistry';
 import Text from './registry/items/Text';
@@ -16,7 +17,9 @@ ObjectRegistry.register(Barcode);
 ObjectRegistry.register(Image);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+    <React.StrictMode>
+        <HelmetProvider>
+            <App />
+        </HelmetProvider>
+    </React.StrictMode>,
+);

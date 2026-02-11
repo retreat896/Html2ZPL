@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import Layout from './components/Layout';
+import MetaTags from './components/common/MetaTags';
 import ToastContainer from './components/ToastContainer';
 import { initConsoleWrapper } from './utils/ConsoleWrapper';
 import { ProjectProvider } from './context/ProjectContext';
@@ -18,6 +19,7 @@ function App() {
     return (
         <AuthProvider>
             <ProjectProvider>
+                <MetaTags />
                 <Layout />
                 <ToastContainer />
             </ProjectProvider>
