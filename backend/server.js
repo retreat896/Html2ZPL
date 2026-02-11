@@ -80,7 +80,7 @@ const authenticateToken = (req, res, next) => {
 // Get all projects for a user
 app.get('/projects', authenticateToken, (req, res) => {
     try {
-        const stmt = db.prepare('SELECT id, name, updated_at FROM projects WHERE user_id = ? ORDER BY updated_at DESC');
+        const stmt = db.prepare('SELECT id, name, is_template, is_public, updated_at FROM projects WHERE user_id = ? ORDER BY updated_at DESC');
         const projects = stmt.all(req.user.id);
         res.json(projects);
     } catch (err) {
@@ -93,23 +93,24 @@ app.get('/projects', authenticateToken, (req, res) => {
 // but usually the frontend might send ID if it knows it.
 // Let's implement: POST /projects to create, PUT /projects/:id to update.
 app.post('/projects', authenticateToken, (req, res) => {
-    const { name, data, id } = req.body;
+    const { name, data, id, isTemplate } = req.body;
 
     if (!name || !data) {
         return res.status(400).json({ error: 'Name and data required' });
     }
 
     try {
+        const isTemplateVal = isTemplate ? 1 : 0;
         if (id) {
             // Update
-            const stmt = db.prepare('UPDATE projects SET name = ?, data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
-            const result = stmt.run(name, data, id, req.user.id);
+            const stmt = db.prepare('UPDATE projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+            const result = stmt.run(name, data, isTemplateVal, id, req.user.id);
             if (result.changes === 0) return res.status(404).json({ error: 'Project not found or unauthorized' });
             res.json({ message: 'Project updated', id });
         } else {
             // Create
-            const stmt = db.prepare('INSERT INTO projects (user_id, name, data) VALUES (?, ?, ?)');
-            const result = stmt.run(req.user.id, name, data);
+            const stmt = db.prepare('INSERT INTO projects (user_id, name, data, is_template) VALUES (?, ?, ?, ?)');
+            const result = stmt.run(req.user.id, name, data, isTemplateVal);
             res.json({ message: 'Project saved', id: result.lastInsertRowid });
         }
     } catch (err) {
@@ -124,6 +125,30 @@ app.get('/projects/:id', authenticateToken, (req, res) => {
         const project = stmt.get(req.params.id, req.user.id);
         if (!project) return res.status(404).json({ error: 'Project not found' });
         res.json(project);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get Public Templates
+app.get('/public/templates', (req, res) => {
+    try {
+        const stmt = db.prepare('SELECT id, name, is_template, is_public, updated_at FROM projects WHERE is_public = 1 ORDER BY updated_at DESC');
+        const projects = stmt.all();
+        res.json(projects);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Toggle Public Status
+app.post('/projects/:id/publish', authenticateToken, (req, res) => {
+    const { isPublic } = req.body;
+    try {
+        const stmt = db.prepare('UPDATE projects SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+        const result = stmt.run(isPublic ? 1 : 0, req.params.id, req.user.id);
+        if (result.changes === 0) return res.status(404).json({ error: 'Project not found or unauthorized' });
+        res.json({ message: `Project ${isPublic ? 'published' : 'unpublished'}` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

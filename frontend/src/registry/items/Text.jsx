@@ -1,5 +1,6 @@
 import React from 'react';
 import LabelObject from '../../classes/LabelObject';
+import { useProject } from '../../context/ProjectContext';
 import { TEXT_PADDING_W, TEXT_PADDING_H, DISPLAY_DPI } from '../../constants/editor';
 
 // --- Logic ---
@@ -14,10 +15,35 @@ export class TextObject extends LabelObject {
         this.height = props.height || 0;
     }
 
-    toZPL(index) {
+    toZPL(index, templateValues = {}) {
+        // Determine the text content to use
+        let content = this.text;
+
+        if (this.isTemplate) {
+            // In Fill Mode (or when generating final ZPL), we use the template value
+            // passed via templateValues map using the object ID.
+            const userValue = templateValues[this.id];
+
+            if (userValue !== undefined) {
+                // If the finalInput pattern contains ${value}, replace it.
+                // Otherwise fallback to just using the value (simple substitution).
+                if (this.finalInput && this.finalInput.includes('${value}')) {
+                    content = this.finalInput.replace('${value}', userValue);
+                } else {
+                    // If no placeholder, assume the whole finalInput IS the content,
+                    // but that's rare. Usually, we want the pattern.
+                    // If finalInput is empty or just "${value}", we use userValue.
+                    content = userValue;
+                }
+            } else {
+                // No value provided? Use preview text or fallback
+                content = this.previewText || this.text;
+            }
+        }
+
         // ^FOx,y^Afont,orientation,height,width^FDdata^FS
         // Use 0 for width to allow proportional scaling
-        return `^FX Text Object ID: ${this.id} Z:${index} W:${this.width} H:${this.height}\n^FO${this.x},${this.y}^A${this.font}${this.orientation},${this.fontSize}^FD${this.text}^FS`;
+        return `^FX Text Object ID: ${this.id} Z:${index} W:${this.width} H:${this.height}\n^FO${this.x},${this.y}^A${this.font}${this.orientation},${this.fontSize}^FD${content}^FS`;
     }
 
     getProps() {
@@ -149,7 +175,30 @@ export class TextObject extends LabelObject {
 
     static get properties() {
         return [
-            { name: 'text', type: 'text', label: 'Text' },
+            {
+                name: 'isTemplate',
+                type: 'boolean',
+                label: 'Is Template',
+            },
+            {
+                name: 'fieldLabel',
+                type: 'text',
+                label: 'Field Label (Description)',
+                showIf: (obj) => obj.isTemplate,
+            },
+            {
+                name: 'previewText',
+                type: 'text',
+                label: 'Preview Input',
+                showIf: (obj) => obj.isTemplate,
+            },
+            {
+                name: 'finalInput',
+                type: 'text',
+                label: 'Final Input Pattern (use ${value})',
+                showIf: (obj) => obj.isTemplate,
+            },
+            { name: 'text', type: 'text', label: 'Default Text', showIf: (obj) => !obj.isTemplate },
             { name: 'fontSize', type: 'number', label: 'Font Size', min: 5, step: 1 },
             {
                 name: 'orientation',
@@ -168,12 +217,36 @@ export class TextObject extends LabelObject {
 
 // --- Component ---
 export const TextComponent = ({ object }) => {
+    const { interactionMode, templateValues } = useProject();
+
+    // Determine what to display
+    // - Design Mode: Use previewText if template, else text
+    // - Fill Mode: Use templateValue if template (fallback to previewText/text), else text
+
+    let displayText = object.text;
+
+    if (object.isTemplate) {
+        if (interactionMode === 'fill') {
+            const userValue = templateValues[object.id];
+            if (userValue !== undefined && userValue !== '') {
+                // In fill mode, we just show what the user typed.
+                // We do NOT show the complex substitution pattern (finalInput) here normally,
+                // unless the user wants to see the raw code, but usually they want to see "Banana",
+                // not "^FD...Banana...^FS"
+                displayText = userValue;
+            } else {
+                // Fallback to preview text to show "what goes here"
+                displayText = object.previewText || object.text;
+            }
+        } else {
+            // Design Mode
+            displayText = object.previewText || object.text;
+        }
+    }
+
     return (
-        <span 
-            className="text-black whitespace-nowrap select-none inline-block leading-none" 
-            style={{ fontSize: `${object.fontSize}px` }}
-        >
-            {object.text}
+        <span className="text-black whitespace-nowrap select-none inline-block leading-none" style={{ fontSize: `${object.fontSize}px` }}>
+            {displayText}
         </span>
     );
 };

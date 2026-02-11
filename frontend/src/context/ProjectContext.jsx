@@ -11,6 +11,15 @@ export const useProject = () => useContext(ProjectContext);
 
 const DEFAULT_LABEL_SETTINGS = { width: 4, height: 6, unit: 'inch', dpmm: 8 };
 
+const DEFAULT_EDITOR_SETTINGS = {
+    confineToLabel: true,
+    bleed: 0,
+    showGrid: true,
+    snapToGrid: true,
+    gridSize: 10,
+    showHtmlObjects: true,
+};
+
 export const ProjectProvider = ({ children }) => {
     const rehydrateProject = (projectData) => {
         if (!projectData || !projectData.labels) return projectData;
@@ -55,6 +64,7 @@ export const ProjectProvider = ({ children }) => {
                 name: 'New Project',
                 created: Date.now(),
                 author: 'User',
+                isTemplate: false,
             },
             labels: [
                 {
@@ -78,14 +88,27 @@ export const ProjectProvider = ({ children }) => {
     });
 
     const [selectedObjectId, setSelectedObjectId] = useState(null);
-    const [editorSettings, setEditorSettings] = useState({
-        confineToLabel: true,
-        bleed: 0, // Pixels of bleed allowed beyond label boundaries (can be negative for inset)
-        showGrid: true,
-        snapToGrid: true,
-        gridSize: 10, // Pixels
-        showHtmlObjects: true,
+    const [editorSettings, setEditorSettings] = useState(() => {
+        const saved = localStorage.getItem('html2zpl_settings');
+        if (saved) {
+            try {
+                return { ...DEFAULT_EDITOR_SETTINGS, ...JSON.parse(saved) };
+            } catch (e) {
+                console.error('Failed to parse saved settings', e);
+            }
+        }
+        return DEFAULT_EDITOR_SETTINGS;
     });
+
+    // Interaction Mode: 'design' or 'fill'
+    // Defaults to 'fill' per user request
+    const [interactionMode, setInteractionMode] = useState('fill');
+
+    // Template Values: Map of objectId -> value
+    const [templateValues, setTemplateValues] = useState({});
+
+    // View State: 'editor' | 'templates' | 'settings'
+    const [currentView, setCurrentView] = useState('editor');
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -237,6 +260,14 @@ export const ProjectProvider = ({ children }) => {
         });
     };
 
+    const toggleInteractionMode = () => {
+        setInteractionMode((prev) => (prev === 'design' ? 'fill' : 'design'));
+    };
+
+    const updateTemplateValue = (objectId, value) => {
+        setTemplateValues((prev) => ({ ...prev, [objectId]: value }));
+    };
+
     const generateZPL = (labelId) => {
         const label = project.labels.find((l) => l.id === labelId);
         if (!label) return '';
@@ -256,8 +287,8 @@ export const ProjectProvider = ({ children }) => {
 
                 const instance = new def.class(convertedObj);
                 Object.assign(instance, convertedObj);
-                // Pass index to toZPL for comment inclusion
-                zpl += instance.toZPL(index) + '\n';
+                // Pass index and templateValues to toZPL
+                zpl += instance.toZPL(index, templateValues) + '\n';
             }
         });
 
@@ -267,7 +298,7 @@ export const ProjectProvider = ({ children }) => {
 
     // Cloud Functions
     const { token } = useAuth();
-    const API_URL = import.meta.env.VITE_API_URL ?? "/api";
+    const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
     const fetchProjects = async () => {
         if (!token) return [];
@@ -283,12 +314,22 @@ export const ProjectProvider = ({ children }) => {
         }
     };
 
-    const saveToCloud = async (name) => {
+    const saveToCloud = async (name, projectData = null) => {
         if (!token) return { success: false, error: 'Not logged in' };
         try {
-            // Update metadata name
-            const updatedProject = { ...project, metadata: { ...project.metadata, name } };
-            setProject(updatedProject);
+            // Use provided project data or current state
+            const projectToSave = projectData || project;
+
+            // Update metadata name if we are using current state,
+            // OR if we want to ensure the name is correct in the payload.
+            const updatedProject = {
+                ...projectToSave,
+                metadata: { ...projectToSave.metadata, name },
+            };
+
+            if (!projectData) {
+                setProject(updatedProject);
+            }
 
             const res = await fetch(`${API_URL}/projects`, {
                 method: 'POST',
@@ -299,6 +340,7 @@ export const ProjectProvider = ({ children }) => {
                 body: JSON.stringify({
                     name,
                     data: JSON.stringify(updatedProject),
+                    isTemplate: updatedProject.metadata?.isTemplate || false,
                 }),
             });
 
@@ -337,6 +379,35 @@ export const ProjectProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Failed to delete project');
+            return { success: true };
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    };
+
+    const fetchPublicTemplates = async () => {
+        try {
+            const res = await fetch(`${API_URL}/public/templates`);
+            if (!res.ok) throw new Error('Failed to fetch public templates');
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
+    };
+
+    const publishProject = async (id, isPublic = true) => {
+        if (!token) return { success: false, error: 'Not logged in' };
+        try {
+            const res = await fetch(`${API_URL}/projects/${id}/publish`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ isPublic }),
+            });
+            if (!res.ok) throw new Error('Failed to update public status');
             return { success: true };
         } catch (e) {
             return { success: false, error: e.message };
@@ -435,17 +506,62 @@ export const ProjectProvider = ({ children }) => {
         }
     };
 
+    // Local Template Management
+    const saveLocalTemplate = (template) => {
+        try {
+            const existing = localStorage.getItem('html2zpl_templates');
+            let templates = existing ? JSON.parse(existing) : [];
+
+            // Check if exists (update) or new
+            const index = templates.findIndex((t) => t.metadata.created === template.metadata.created && t.metadata.name === template.metadata.name);
+
+            if (index >= 0) {
+                templates[index] = template;
+            } else {
+                templates.push(template);
+            }
+
+            localStorage.setItem('html2zpl_templates', JSON.stringify(templates));
+            return true;
+        } catch (e) {
+            console.error('Failed to save local template', e);
+            return false;
+        }
+    };
+
+    const getLocalTemplates = () => {
+        try {
+            const existing = localStorage.getItem('html2zpl_templates');
+            return existing ? JSON.parse(existing) : [];
+        } catch (e) {
+            console.error('Failed to load local templates', e);
+            return [];
+        }
+    };
+
+    const deleteLocalTemplate = (createdTimestamp) => {
+        try {
+            const existing = localStorage.getItem('html2zpl_templates');
+            if (!existing) return;
+            let templates = JSON.parse(existing);
+            templates = templates.filter((t) => t.metadata.created !== createdTimestamp);
+            localStorage.setItem('html2zpl_templates', JSON.stringify(templates));
+        } catch (e) {
+            console.error('Failed to delete local template', e);
+        }
+    };
+
     // Settings Sync
     const saveSettingsToCloud = async (settings) => {
         if (!token) return;
         try {
             await fetch(`${API_URL}/settings`, {
                 method: 'PUT',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ settings })
+                body: JSON.stringify({ settings }),
             });
         } catch (e) {
             console.error('Failed to save settings:', e);
@@ -458,12 +574,12 @@ export const ProjectProvider = ({ children }) => {
             if (token) {
                 try {
                     const res = await fetch(`${API_URL}/settings`, {
-                        headers: { Authorization: `Bearer ${token}` }
+                        headers: { Authorization: `Bearer ${token}` },
                     });
                     if (res.ok) {
                         const cloudSettings = await res.json();
                         if (Object.keys(cloudSettings).length > 0) {
-                            setEditorSettings(prev => ({ ...prev, ...cloudSettings }));
+                            setEditorSettings((prev) => ({ ...prev, ...cloudSettings }));
                         }
                     }
                 } catch (e) {
@@ -477,6 +593,7 @@ export const ProjectProvider = ({ children }) => {
     // Auto-save settings on change (Debounced)
     React.useEffect(() => {
         const timeoutId = setTimeout(() => {
+            localStorage.setItem('html2zpl_settings', JSON.stringify(editorSettings));
             if (token) {
                 saveSettingsToCloud(editorSettings);
             }
@@ -520,6 +637,18 @@ export const ProjectProvider = ({ children }) => {
                 deleteCloudProject,
                 isPreviewOpen,
                 setIsPreviewOpen,
+                interactionMode,
+                setInteractionMode,
+                toggleInteractionMode,
+                templateValues,
+                updateTemplateValue,
+                currentView,
+                setCurrentView,
+                saveLocalTemplate,
+                getLocalTemplates,
+                deleteLocalTemplate,
+                fetchPublicTemplates,
+                publishProject,
             }}>
             {children}
         </ProjectContext.Provider>

@@ -247,10 +247,12 @@ export const ImageComponent = ({ object }) => {
 };
 
 // --- Definition ---
-export default {
+export const ImageDefinition = {
     type: 'image',
     name: 'Image',
     icon: 'fa-image',
     class: ImageObject,
-    Component: ImageComponent
+    Component: ImageComponent,
 };
+
+export default ImageComponent;

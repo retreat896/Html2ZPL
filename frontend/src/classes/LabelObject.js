@@ -13,6 +13,10 @@ export default class LabelObject {
      * @param {number} [props.x=0] - X-coordinate position.
      * @param {number} [props.y=0] - Y-coordinate position.
      * @param {string} [props.zplCommand=''] - Raw ZPL command if applicable.
+     * @param {boolean} [props.isTemplate=false] - Whether this object is a template field.
+     * @param {string} [props.fieldLabel=''] - Label for the input field in Fill Mode.
+     * @param {string} [props.previewText=''] - Text to show in Editor (Design Mode).
+     * @param {string} [props.finalInput=''] - Pattern for final ZPL output (e.g. "${value}").
      */
     constructor(type, props = {}) {
         this.id = props.id || uuidv4();
@@ -20,6 +24,12 @@ export default class LabelObject {
         this.x = props.x || 0;
         this.y = props.y || 0;
         this.zplCommand = props.zplCommand || '';
+
+        // Template properties
+        this.isTemplate = !!props.isTemplate;
+        this.fieldLabel = props.fieldLabel || '';
+        this.previewText = props.previewText || ''; // Used for editor display
+        this.finalInput = props.finalInput || '${value}'; // Used for ZPL generation
     }
 
     /**
@@ -46,6 +56,12 @@ export default class LabelObject {
             y: this.y,
             width: this.width,
             height: this.height,
+            width: this.width,
+            height: this.height,
+            isTemplate: this.isTemplate,
+            fieldLabel: this.fieldLabel,
+            previewText: this.previewText,
+            finalInput: this.finalInput,
             props: this.getProps()
         };
     }

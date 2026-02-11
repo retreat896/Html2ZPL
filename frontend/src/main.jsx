@@ -9,7 +9,7 @@ import ObjectRegistry from './classes/ObjectRegistry';
 import Text from './registry/items/Text';
 import Graphic from './registry/items/Graphic';
 import Barcode from './registry/items/Barcode';
-import Image from './registry/items/Image';
+import { ImageDefinition as Image } from './registry/items/Image';
 
 ObjectRegistry.register(Text);
 ObjectRegistry.register(Graphic);

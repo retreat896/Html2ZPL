@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import Layout from './components/Layout';
 import MetaTags from './components/common/MetaTags';
-import ToastContainer from './components/ToastContainer';
-import { initConsoleWrapper } from './utils/ConsoleWrapper';
+import { ToastProvider } from './context/ToastContext';
 import { ProjectProvider } from './context/ProjectContext';
 import { AuthProvider } from './context/AuthContext';
+import { initConsoleWrapper } from './utils/ConsoleWrapper';
 
 function App() {
     useEffect(() => {
@@ -18,11 +18,12 @@ function App() {
 
     return (
         <AuthProvider>
-            <ProjectProvider>
-                <MetaTags />
-                <Layout />
-                <ToastContainer />
-            </ProjectProvider>
+            <ToastProvider>
+                <ProjectProvider>
+                    <MetaTags />
+                    <Layout />
+                </ProjectProvider>
+            </ToastProvider>
         </AuthProvider>
     );
 }

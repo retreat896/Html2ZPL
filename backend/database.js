@@ -26,11 +26,28 @@ try {
       user_id INTEGER NOT NULL,
       name TEXT NOT NULL,
       data TEXT NOT NULL,
+      is_template BOOLEAN DEFAULT 0,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(user_id) REFERENCES users(id)
     )
   `;
   db.exec(createProjectsTable);
+
+  // Migration: Add is_template column if it doesn't exist (for existing DBs)
+  try {
+    db.exec("ALTER TABLE projects ADD COLUMN is_template BOOLEAN DEFAULT 0");
+    console.log("Added is_template column to projects table.");
+  } catch (e) {
+    // Column likely exists, ignore
+  }
+
+  // Migration: Add is_public column
+  try {
+    db.exec("ALTER TABLE projects ADD COLUMN is_public BOOLEAN DEFAULT 0");
+    console.log("Added is_public column to projects table.");
+  } catch (e) {
+    // Column likely exists, ignore
+  }
 
   const createUserSettingsTable = `
     CREATE TABLE IF NOT EXISTS user_settings (
