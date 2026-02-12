@@ -65,7 +65,7 @@ export default function ProjectList({ projects, loading, onOpenProject, onDelete
                                     <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400 space-x-4">
                                         <span>Opened {project.updated_at ? new Date(project.updated_at).toLocaleDateString() : 'Unknown date'}</span>
                                         <span>•</span>
-                                        <span>{project.labels?.length || 0} Labels</span>
+                                        <span>{project.label_count !== undefined ? project.label_count : project.labels?.length || 0} Labels</span>
                                     </div>
                                 </div>
                                 <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">

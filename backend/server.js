@@ -80,7 +80,13 @@ const authenticateToken = (req, res, next) => {
 // Get all projects for a user
 app.get('/projects', authenticateToken, (req, res) => {
     try {
-        const stmt = db.prepare('SELECT id, name, is_template, is_public, updated_at FROM projects WHERE user_id = ? ORDER BY updated_at DESC');
+        const stmt = db.prepare(`
+            SELECT id, name, is_template, is_public, updated_at, 
+            json_array_length(json_extract(data, '$.labels')) as label_count 
+            FROM projects 
+            WHERE user_id = ? 
+            ORDER BY updated_at DESC
+        `);
         const projects = stmt.all(req.user.id);
         res.json(projects);
     } catch (err) {

@@ -91,7 +91,13 @@ app.use('/settings', (c, next) => {
 app.get('/projects', async (c) => {
     const payload = c.get('jwtPayload');
     try {
-        const { results } = await c.env.DB.prepare('SELECT id, name, is_template, is_public, updated_at FROM zpl_projects WHERE user_id = ? ORDER BY updated_at DESC')
+        const { results } = await c.env.DB.prepare(`
+            SELECT id, name, is_template, is_public, updated_at, 
+            json_array_length(json_extract(data, '$.labels')) as label_count 
+            FROM zpl_projects 
+            WHERE user_id = ? 
+            ORDER BY updated_at DESC
+        `)
             .bind(payload.id)
             .all();
         return c.json(results);
