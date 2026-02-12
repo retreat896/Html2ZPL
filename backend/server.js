@@ -171,8 +171,8 @@ app.delete('/projects/:id', authenticateToken, (req, res) => {
     try {
         const stmt = db.prepare('DELETE FROM projects WHERE id = ? AND user_id = ?');
         const result = stmt.run(req.params.id, req.user.id);
-        if (result.changes === 0) return res.status(404).json({ error: 'Project not found' });
-        res.json({ message: 'Project deleted' });
+        if (result.changes === 0) return res.status(404).json({ error: 'Project not found or unauthorized' });
+        res.json({ success: true, message: 'Project deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

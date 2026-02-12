@@ -242,7 +242,7 @@ app.delete('/projects/:id', async (c) => {
             .bind(id, payload.id)
             .run();
         if (result.meta?.changes === 0) return c.json({ error: 'Project not found' }, 404);
-        return c.json({ message: 'Project deleted' });
+        return c.json({ success: true, message: 'Project deleted' });
     } catch (err) {
         return c.json({ error: err.message }, 500);
     }

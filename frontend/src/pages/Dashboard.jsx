@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
+import { v4 as uuidv4 } from 'uuid';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import TemplateGallery from '../components/dashboard/TemplateGallery';
@@ -135,7 +136,7 @@ export default function Dashboard() {
     };
 
     const handleDeleteProject = async (project) => {
-        if (!window.confirm(`Are you sure you want to delete "${project.metadata.name}"?`)) return;
+        if (!window.confirm(`Are you sure you want to delete "${project.name || 'Untitled Project'}"?`)) return;
 
         try {
             const res = await deleteCloudProject(project.id);
