@@ -1,16 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useProject } from '../context/ProjectContext';
-import { useAuth } from '../context/AuthContext';
-import LoginModal from './LoginModal';
-import CloudProjectsModal from './CloudProjectsModal';
+import { useNavigate } from 'react-router-dom';
+import { useProject } from '../../context/ProjectContext';
+import { useAuth } from '../../context/AuthContext';
+import LoginModal from '../common/LoginModal';
+import ShareModal from '../common/ShareModal';
 
-export default function Header({ toggleSidebar, toggleRightSidebar }) {
-    const { project, setIsPreviewOpen, updateProjectMeta, saveProject, loadProject } = useProject();
+export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
+    const { project, setIsPreviewOpen, updateProjectMeta, saveProject, loadProject, saveStatus } = useProject();
     const { user, logout } = useAuth();
-    const [isEditing, setIsEditing] = useState(false);
-    const [tempTitle, setTempTitle] = useState('');
+    const navigate = useNavigate();
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-    const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const mobileMenuRef = useRef(null);
 
@@ -31,55 +31,52 @@ export default function Header({ toggleSidebar, toggleRightSidebar }) {
         setIsPreviewOpen(true);
     };
 
-    const startEditing = () => {
-        setTempTitle(project.metadata.name);
-        setIsEditing(true);
-    };
-
-    const saveTitle = () => {
-        if (tempTitle.trim()) {
-            updateProjectMeta({ name: tempTitle.trim() });
-        }
-        setIsEditing(false);
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            saveTitle();
-        } else if (e.key === 'Escape') {
-            setIsEditing(false);
-        }
-    };
-
     return (
         <>
             <header className="flex items-center justify-between h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 shrink-0">
-                {/* Left Side: Hamburger (mobile) + Title */}
+                {/* Left Side: Hamburger (mobile) */}
                 <div className="flex items-center gap-3">
-                    <button id="hamburger-btn" onClick={toggleSidebar} className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <button id="hamburger-btn" onClick={toggleLeftSidebar} className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <i className="fa-solid fa-bars text-xl"></i>
                     </button>
-                    {isEditing ? (
-                        <input
-                            type="text"
-                            value={tempTitle}
-                            onChange={(e) => setTempTitle(e.target.value)}
-                            onBlur={saveTitle}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                            className="text-xl font-semibold text-gray-800 dark:text-white bg-transparent border-b border-blue-500 focus:outline-none"
-                        />
-                    ) : (
-                        <h1 className="text-xl font-semibold text-gray-800 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors select-none" onDoubleClick={startEditing} title="Double-click to rename">
-                            {project.metadata.name}
-                        </h1>
-                    )}
+
+                    <div className="p-1 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" onClick={() => navigate('/')}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                            <img className="shrink-0 cursor-pointer" src="/favicon.svg" alt="Logo" title="Back to Dashboard" />
+                        </div>
+                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Html2ZPL</span>
+                    </div>
                 </div>
 
                 {/* Right Side: Actions + User */}
                 <div id="rightPanel" className="flex items-center gap-4">
                     {/* Desktop Actions */}
-                    <div className="hidden sm:flex items-center gap-4">
+                    <div className="hidden lg:flex items-center gap-3">
+                        {/* Save Status Indicator */}
+                        {user && project && project.id && (
+                            <div className="mr-2 text-xs font-medium flex items-center gap-1.5 min-w-[80px] justify-end">
+                                {saveStatus === 'saving' && (
+                                    <>
+                                        <i className="fa-solid fa-circle-notch fa-spin text-blue-500"></i>
+                                        <span className="text-gray-500 dark:text-gray-400">Saving...</span>
+                                    </>
+                                )}
+                                {saveStatus === 'saved' && (
+                                    <>
+                                        <i className="fa-solid fa-check text-green-500"></i>
+                                        <span className="text-gray-500 dark:text-gray-400">Saved</span>
+                                    </>
+                                )}
+                                {saveStatus === 'unsaved' && <span className="text-gray-400 dark:text-gray-500">Unsaved</span>}
+                                {saveStatus === 'error' && (
+                                    <>
+                                        <i className="fa-solid fa-circle-exclamation text-red-500"></i>
+                                        <span className="text-red-500">Error</span>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
                         <button
                             onClick={handlePreview}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
@@ -121,16 +118,14 @@ export default function Header({ toggleSidebar, toggleRightSidebar }) {
                             />
                         </label>
 
-                        {user && (
-                            <button
-                                onClick={() => setIsCloudModalOpen(true)}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-900/50 rounded-lg text-sm font-medium transition-colors">
-                                <i className="fa-solid fa-cloud"></i>
-                                Cloud Projects
-                            </button>
-                        )}
+                        <button
+                            onClick={() => navigate('/')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-900/50 rounded-lg text-sm font-medium transition-colors">
+                            <i className="fa-solid fa-house"></i>
+                            Dashboard
+                        </button>
 
-                        <button className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700">
+                        <button onClick={() => setIsShareModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                 <polyline points="15 3 21 3 21 9"></polyline>
@@ -139,6 +134,7 @@ export default function Header({ toggleSidebar, toggleRightSidebar }) {
                             Share
                         </button>
 
+                        {/* ... (User Session Logic) ... */}
                         {user ? (
                             <div className="flex items-center gap-3">
                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{user.username}</span>
@@ -154,7 +150,7 @@ export default function Header({ toggleSidebar, toggleRightSidebar }) {
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <div className="sm:hidden relative" ref={mobileMenuRef}>
+                    <div className="lg:hidden relative" ref={mobileMenuRef}>
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none">
                             <i className="fa-solid fa-ellipsis-vertical text-xl"></i>
                         </button>
@@ -205,19 +201,34 @@ export default function Header({ toggleSidebar, toggleRightSidebar }) {
                                     />
                                 </label>
 
+                                <button
+                                    onClick={() => {
+                                        setIsShareModalOpen(true);
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                    Share
+                                </button>
+
                                 <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+
+                                <button
+                                    onClick={() => {
+                                        navigate('/');
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                                    <i className="fa-solid fa-house w-4 text-center"></i>
+                                    Dashboard
+                                </button>
 
                                 {user ? (
                                     <>
-                                        <button
-                                            onClick={() => {
-                                                setIsCloudModalOpen(true);
-                                                setIsMobileMenuOpen(false);
-                                            }}
-                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-                                            <i className="fa-solid fa-cloud w-4 text-center"></i>
-                                            Cloud Projects
-                                        </button>
                                         <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 font-medium">Signed in as {user.username}</div>
                                         <button
                                             onClick={() => {
@@ -257,7 +268,7 @@ export default function Header({ toggleSidebar, toggleRightSidebar }) {
             </header>
 
             <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
-            <CloudProjectsModal isOpen={isCloudModalOpen} onClose={() => setIsCloudModalOpen(false)} />
+            <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} />
         </>
     );
 }

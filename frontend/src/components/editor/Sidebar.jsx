@@ -1,10 +1,37 @@
 import React, { useState } from 'react';
 import clsx from 'clsx';
-import { useProject } from '../context/ProjectContext';
+import { useProject } from '../../context/ProjectContext';
+
+import { useNavigate } from 'react-router-dom';
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
-    const { project, activeLabelId, setActiveLabelId, addLabel, deleteLabel, renameLabel, currentView, setCurrentView } = useProject();
+    const navigate = useNavigate();
+    const { project, activeLabelId, setActiveLabelId, addLabel, deleteLabel, renameLabel, currentView, setCurrentView, updateProjectMeta } = useProject();
     const [isLabelsOpen, setIsLabelsOpen] = useState(true);
+
+    // Project Rename State
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [tempTitle, setTempTitle] = useState('');
+
+    const startEditingTitle = () => {
+        setTempTitle(project.metadata.name);
+        setIsEditingTitle(true);
+    };
+
+    const saveTitle = () => {
+        if (tempTitle.trim()) {
+            updateProjectMeta({ name: tempTitle.trim() });
+        }
+        setIsEditingTitle(false);
+    };
+
+    const handleTitleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            saveTitle();
+        } else if (e.key === 'Escape') {
+            setIsEditingTitle(false);
+        }
+    };
 
     // ... (skip down to NavItem definition)
 
@@ -59,14 +86,32 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             <aside id="sidebar" className={clsx('fixed lg:relative top-0 left-0 h-full bg-white dark:bg-gray-800 shadow-lg z-30 flex flex-col transition-all duration-300 ease-in-out', isOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:translate-x-0 lg:w-20')}>
                 {/* Sidebar Header */}
                 <div id="sidebar-header" className="transition-all flex items-center justify-between h-16 md:p-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
-                    <a href="#" className="flex items-center gap-1 overflow-hidden">
-                        {/* Icon */}
-                        <img className="pl-4 w-12 h-12 shrink-0" src="/favicon.svg" alt="Logo" />
-                        <span className={clsx('text-xl font-semibold text-gray-800 dark:text-white transition-all whitespace-nowrap', !isOpen && 'lg:opacity-0 lg:w-0')}>LabelEditor</span>
-                    </a>
+                    <div className="flex items-center gap-1 overflow-hidden">
+                        <div className={clsx('transition-all whitespace-nowrap overflow-hidden', !isOpen && 'lg:opacity-0 lg:w-0')}>
+                            {isEditingTitle ? (
+                                <input
+                                    type="text"
+                                    value={tempTitle}
+                                    onChange={(e) => setTempTitle(e.target.value)}
+                                    onBlur={saveTitle}
+                                    onKeyDown={handleTitleKeyDown}
+                                    autoFocus
+                                    className="text-lg font-semibold text-gray-800 dark:text-white bg-transparent border-b border-blue-500 focus:outline-none w-32 ml-2"
+                                />
+                            ) : (
+                                <span className="text-lg font-semibold text-gray-800 dark:text-white transition-colors cursor-pointer hover:text-blue-600 ml-2" onDoubleClick={startEditingTitle} title="Double-click to rename project">
+                                    {project.metadata?.name || 'Untitled'}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                     {/* Left panel collapse toggle (visible on large screens) */}
                     <button onClick={toggleSidebar} className="hidden lg:inline-flex p-3 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <i className={clsx('fa-solid', isOpen ? 'fa-chevron-left' : 'fa-chevron-right')}></i>
+                    </button>
+                    {/* Mobile Close Button */}
+                    <button onClick={toggleSidebar} className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                        <i className="fa-solid fa-xmark text-xl"></i>
                     </button>
                 </div>
 
@@ -84,7 +129,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                         <div className={clsx('overflow-hidden transition-all duration-300 ease-in-out', isLabelsOpen && isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0')}>
                             {isOpen && (
                                 <div className="space-y-1 mt-1">
-                                    {project.labels.map((label) => (
+                                    {project.labels?.map((label) => (
                                         <div
                                             key={label.id}
                                             className={clsx(
@@ -133,17 +178,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                             )}
                         </div>
                     </div>
-
-                    <NavItem icon="fa-pencil" label="Editor" active={currentView === 'editor'} isOpen={isOpen} onClick={() => setCurrentView('editor')} />
-                    <NavItem icon="fa-layer-group" label="Templates" active={currentView === 'templates'} isOpen={isOpen} onClick={() => setCurrentView('templates')} />
-                    <NavItem icon="fa-tags" label="Label Sets" isOpen={isOpen} />
-                    <NavItem icon="fa-gear" label="Settings" isOpen={isOpen} />
                 </nav>
-
-                {/* Sidebar Footer */}
-                <div className={clsx('p-4 border-t border-gray-200 dark:border-gray-700 shrink-0', !isOpen && 'lg:hidden')}>
-                    <NavItem icon="fa-share-from-square" label="Help & Support" isOpen={isOpen} />
-                </div>
             </aside>
         </>
     );

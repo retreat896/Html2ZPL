@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useProject } from '../context/ProjectContext';
+import { useProject } from '../../context/ProjectContext';
 import ConfirmationModal from './ConfirmationModal';
 
 export default function CloudProjectsModal({ isOpen, onClose }) {

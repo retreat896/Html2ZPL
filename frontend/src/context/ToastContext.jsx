@@ -8,7 +8,7 @@ export const ToastProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
 
     const addToast = useCallback((message, type = 'info') => {
-        const id = Date.now();
+        const id = Date.now() + Math.random().toString(36).substr(2, 9);
         setToasts(prev => [...prev, { id, message, type }]);
         
         // Auto remove after 3 seconds

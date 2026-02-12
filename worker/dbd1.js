@@ -25,21 +25,6 @@ export const createTables = async (db) => {
         `);
         console.log('Tables ready (D1).');
 
-        // Migrations: Add is_template column if missing
-        try {
-            await db.prepare("ALTER TABLE zpl_projects ADD COLUMN is_template BOOLEAN DEFAULT 0").run();
-            console.log("Added is_template column (D1).");
-        } catch (e) {
-            // Ignore if column exists
-        }
-
-        // Migrations: Add is_public column if missing
-        try {
-            await db.prepare("ALTER TABLE zpl_projects ADD COLUMN is_public BOOLEAN DEFAULT 0").run();
-            console.log("Added is_public column (D1).");
-        } catch (e) {
-            // Ignore if column exists
-        }
     } catch (err) {
         console.error('Error creating tables:', err);
     }

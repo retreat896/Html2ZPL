@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
-import { useProject } from '../context/ProjectContext';
-import { LABEL_SIZES } from '../constants/labelSizes';
-import ObjectRegistry from '../classes/ObjectRegistry';
+import { useProject } from '../../context/ProjectContext';
+import { LABEL_SIZES } from '../../constants/labelSizes';
+import ObjectRegistry from '../../classes/ObjectRegistry';
 import PropertiesRenderer from './properties/PropertiesRenderer';
 import FillPanel from './properties/FillPanel';
 
-export default function RightSidebar() {
+export default function RightSidebar({ isOpen, setIsOpen }) {
     const { project, activeLabel, updateLabelSettings, selectedObjectId, updateObject, interactionMode, toggleInteractionMode } = useProject();
     const selectedObject = activeLabel?.objects.find((obj) => obj.id === selectedObjectId);
 
     // Track sidebar open/closed state
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    // const [isOpen, setIsSidebarOpen] = useState(true);
 
     // Track which panels are open
     const [openPanels, setOpenPanels] = useState({
@@ -19,14 +19,27 @@ export default function RightSidebar() {
         objectProperties: true,
     });
 
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 1024) {
+                setIsOpen(false);
+            } else {
+                setIsOpen(true);
+            }
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
+        setIsOpen(!isOpen);
     };
 
     const togglePanel = (panelName) => {
         // If sidebar is closed, open it AND the clicked panel
-        if (!isSidebarOpen) {
-            setIsSidebarOpen(true);
+        if (!isOpen) {
+            setIsOpen(true);
             setOpenPanels((prev) => ({ ...prev, [panelName]: true }));
         } else {
             // Normal toggle behavior when sidebar is open
@@ -59,10 +72,10 @@ export default function RightSidebar() {
     };
 
     return (
-        <aside id="right-sidebar" className={clsx('h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-all duration-300 ease-in-out', isSidebarOpen ? 'w-80' : 'w-12')}>
+        <aside id="right-sidebar" className={clsx('h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-all duration-300 ease-in-out', isOpen ? 'w-80' : 'w-12')}>
             {/* Sidebar Header */}
             <div className="h-16 flex items-center justify-between px-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
-                {isSidebarOpen && (
+                {isOpen && (
                     <>
                         <div className="flex items-center gap-2">
                             <button onClick={toggleSidebar} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -93,7 +106,7 @@ export default function RightSidebar() {
                         </div>
                     </>
                 )}
-                {!isSidebarOpen && (
+                {!isOpen && (
                     <button onClick={toggleSidebar} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 mx-auto" title="Properties">
                         <i className="fa-solid fa-chevron-left"></i>
                     </button>
@@ -102,7 +115,7 @@ export default function RightSidebar() {
 
             {/* Collapsible Panels */}
             <div className="flex-1 overflow-y-auto">
-                {isSidebarOpen ? (
+                {isOpen ? (
                     interactionMode === 'fill' ? (
                         <FillPanel />
                     ) : (
@@ -206,24 +219,17 @@ export default function RightSidebar() {
 }
 
 function CollapsiblePanel({ title, icon, isOpen, onToggle, children }) {
-  return (
-    <div className="border-b border-gray-200 dark:border-gray-700">
-      {/* Panel Header */}
-      <div 
-        className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-        onClick={onToggle}
-      >
-        <i className={clsx("fa-solid text-gray-600 dark:text-gray-400", icon)}></i>
-        <span className="flex-1 text-sm font-semibold text-gray-900 dark:text-white">{title}</span>
-        <i className={clsx("fa-solid text-xs text-gray-500 transition-transform", isOpen ? "fa-chevron-down" : "fa-chevron-right")}></i>
-      </div>
-      
-      {/* Panel Content */}
-      {isOpen && (
-        <div className="px-3 pb-3 space-y-3 animate-fadeIn">
-          {children}
+    return (
+        <div className="border-b border-gray-200 dark:border-gray-700">
+            {/* Panel Header */}
+            <div className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" onClick={onToggle}>
+                <i className={clsx('fa-solid text-gray-600 dark:text-gray-400', icon)}></i>
+                <span className="flex-1 text-sm font-semibold text-gray-900 dark:text-white">{title}</span>
+                <i className={clsx('fa-solid text-xs text-gray-500 transition-transform', isOpen ? 'fa-chevron-down' : 'fa-chevron-right')}></i>
+            </div>
+
+            {/* Panel Content */}
+            {isOpen && <div className="px-3 pb-3 space-y-3 animate-fadeIn">{children}</div>}
         </div>
-      )}
-    </div>
-  );
+    );
 }

@@ -186,6 +186,20 @@ app.get('/public/templates', async (c) => {
     }
 });
 
+// Get Specific Public Project/Template
+app.get('/public/projects/:id', async (c) => {
+    const id = c.req.param('id');
+    try {
+        const project = await c.env.DB.prepare('SELECT * FROM zpl_projects WHERE id = ? AND is_public = 1')
+            .bind(id)
+            .first();
+        if (!project) return c.json({ error: 'Project not found or not public' }, 404);
+        return c.json(project);
+    } catch (err) {
+        return c.json({ error: err.message }, 500);
+    }
+});
+
 // Toggle Public Status
 app.post('/projects/:id/publish', async (c) => {
     const payload = c.get('jwtPayload'); // Auth middleware must be applied to this route? 

@@ -141,6 +141,18 @@ app.get('/public/templates', (req, res) => {
     }
 });
 
+// Get Specific Public Project/Template
+app.get('/public/projects/:id', (req, res) => {
+    try {
+        const stmt = db.prepare('SELECT * FROM projects WHERE id = ? AND is_public = 1');
+        const project = stmt.get(req.params.id);
+        if (!project) return res.status(404).json({ error: 'Project not found or not public' });
+        res.json(project);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Toggle Public Status
 app.post('/projects/:id/publish', authenticateToken, (req, res) => {
     const { isPublic } = req.body;

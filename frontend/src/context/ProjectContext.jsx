@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from './AuthContext';
 import ObjectRegistry from '../classes/ObjectRegistry';
@@ -101,10 +101,69 @@ export const ProjectProvider = ({ children }) => {
     });
 
     // Interaction Mode: 'design' or 'fill'
-    // Defaults to 'fill' per user request
-    const [interactionMode, setInteractionMode] = useState('fill');
+    const [interactionMode, setInteractionMode] = useState('design'); // 'design' or 'fill'
+    // 'saved', 'saving', 'error', 'unsaved'
+    const [saveStatus, setSaveStatus] = useState('saved');
 
-    // Template Values: Map of objectId -> value
+    // Ref to track the last saved state to prevent save loops
+    // We initialize it as empty string so first load might trigger check,
+    // but the 'if project.id' check handles the very first empty state.
+    // Actually, handling initial load: we don't want to auto-save immediately on load.
+    // We can set this ref when we load a project too?
+    const lastSavedProjectRef = React.useRef(null);
+
+    // Auto-save logic
+    useEffect(() => {
+        if (!project || !project.id || !token) return;
+
+        const currentProjectStr = JSON.stringify(project);
+
+        // If first run (after load) or no change, don't save.
+        if (lastSavedProjectRef.current === null) {
+            lastSavedProjectRef.current = currentProjectStr;
+            return;
+        }
+
+        if (currentProjectStr === lastSavedProjectRef.current) {
+            // No content change
+            return;
+        }
+
+        setSaveStatus('unsaved');
+
+        const timer = setTimeout(async () => {
+            setSaveStatus('saving');
+            console.log('Auto-saving...');
+
+            // We save the CURRENT project state captured in closure?
+            // No, we should use the state at the time timer fires?
+            // `project` in closure is the one that triggered the effect.
+            // If multiple updates happened, this effect was cleaned up and re-run with new closure.
+            // So `project` here IS the latest stable state after 2s of no changes.
+
+            const res = await saveToCloud(project.metadata.name);
+
+            if (res.success) {
+                setSaveStatus('saved');
+                // Update ref to match what we just saved (including any ID updates if saveToCloud returns them)
+                // saveToCloud returns { success: true, savedData: ... }
+                // We use savedData because saveToCloud might have updated the project (e.g. ID)
+                // and called setProject, which triggers this effect again.
+                // By updating the ref to match savedData, next effect run will see match and abort.
+                if (res.savedData) {
+                    lastSavedProjectRef.current = JSON.stringify(res.savedData);
+                } else {
+                    // Fallback if savedData missing
+                    lastSavedProjectRef.current = JSON.stringify(project);
+                }
+            } else {
+                setSaveStatus('error');
+            }
+        }, 2000);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [project]); // Dependency on 'project' means it triggers on every change.ate Values: Map of objectId -> value
     const [templateValues, setTemplateValues] = useState({});
 
     // View State: 'editor' | 'templates' | 'settings'
@@ -112,7 +171,7 @@ export const ProjectProvider = ({ children }) => {
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    const activeLabel = project.labels.find((l) => l.id === activeLabelId);
+    const activeLabel = project.labels?.find((l) => l.id === activeLabelId);
 
     const addLabel = () => {
         const newLabel = {
@@ -314,17 +373,21 @@ export const ProjectProvider = ({ children }) => {
         }
     };
 
-    const saveToCloud = async (name, projectData = null) => {
+    const saveToCloud = async (nameObj, projectData = null) => {
         if (!token) return { success: false, error: 'Not logged in' };
         try {
             // Use provided project data or current state
             const projectToSave = projectData || project;
 
+            // Allow name to be passed as argument, OR fallback to existing metadata name, OR default to 'Untitled Project'
+            // NOTE: The argument 'nameObj' might be the name string OR null/undefined if called without args.
+            const nameToUse = nameObj || projectToSave.metadata?.name || 'Untitled Project';
+
             // Update metadata name if we are using current state,
             // OR if we want to ensure the name is correct in the payload.
             const updatedProject = {
                 ...projectToSave,
-                metadata: { ...projectToSave.metadata, name },
+                metadata: { ...projectToSave.metadata, name: nameToUse },
             };
 
             if (!projectData) {
@@ -338,34 +401,77 @@ export const ProjectProvider = ({ children }) => {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    name,
+                    id: projectToSave.id, // Send ID to update existing
+                    name: nameToUse,
                     data: JSON.stringify(updatedProject),
                     isTemplate: updatedProject.metadata?.isTemplate || false,
                 }),
             });
 
             if (!res.ok) throw new Error('Failed to save project');
-            return { success: true };
+
+            const result = await res.json();
+
+            // Update local project with the backend ID (essential for new projects)
+            if (result.id) {
+                setProject((prev) => ({ ...prev, id: result.id }));
+                updatedProject.id = result.id; // Update local var for return
+            }
+
+            return { success: true, savedData: updatedProject };
         } catch (e) {
             return { success: false, error: e.message };
         }
     };
 
     const loadFromCloud = async (id) => {
-        if (!token) return { success: false, error: 'Not logged in' };
-        try {
-            const res = await fetch(`${API_URL}/projects/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error('Failed to load project');
-            const data = await res.json();
+        let backendProject = null;
 
-            const parsedProject = JSON.parse(data.data);
+        // 1. Try fetching as authenticated user if logged in
+        if (token) {
+            try {
+                const res = await fetch(`${API_URL}/projects/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (res.ok) {
+                    backendProject = await res.json();
+                }
+            } catch (e) {
+                console.warn('Failed to load as authenticated user, trying public...', e);
+            }
+        }
+
+        // 2. If no data yet (not logged in, or fetch failed/404), try public endpoint
+        if (!backendProject) {
+            try {
+                const res = await fetch(`${API_URL}/public/projects/${id}`);
+                if (res.ok) {
+                    backendProject = await res.json();
+                } else {
+                    return { success: false, error: 'Project not found or private' };
+                }
+            } catch (e) {
+                return { success: false, error: e.message };
+            }
+        }
+
+        if (!backendProject || !backendProject.data) return { success: false, error: 'Failed to load project data' };
+
+        try {
+            const parsedProject = JSON.parse(backendProject.data);
             const rehydrated = rehydrateProject(parsedProject);
+
+            // Attach backend metadata
+            rehydrated.id = backendProject.id;
+            rehydrated.is_public = backendProject.is_public;
+
             setProject(rehydrated);
             if (rehydrated.labels.length > 0) setActiveLabelId(rehydrated.labels[0].id);
 
-            return { success: true };
+            // Sync ref to prevent immediate auto-save
+            lastSavedProjectRef.current = JSON.stringify(rehydrated);
+
+            return { success: true, data: rehydrated };
         } catch (e) {
             return { success: false, error: e.message };
         }
@@ -408,6 +514,10 @@ export const ProjectProvider = ({ children }) => {
                 body: JSON.stringify({ isPublic }),
             });
             if (!res.ok) throw new Error('Failed to update public status');
+
+            // Update local state
+            setProject((prev) => ({ ...prev, is_public: isPublic ? 1 : 0 }));
+
             return { success: true };
         } catch (e) {
             return { success: false, error: e.message };
@@ -649,6 +759,8 @@ export const ProjectProvider = ({ children }) => {
                 deleteLocalTemplate,
                 fetchPublicTemplates,
                 publishProject,
+                rehydrateProject,
+                saveStatus,
             }}>
             {children}
         </ProjectContext.Provider>

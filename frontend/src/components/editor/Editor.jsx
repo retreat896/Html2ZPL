@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
-import { useProject } from '../context/ProjectContext';
-import ObjectRegistry from '../classes/ObjectRegistry';
+import { useProject } from '../../context/ProjectContext';
+import ObjectRegistry from '../../classes/ObjectRegistry';
 
-import { DISPLAY_DPI } from '../constants/editor';
+import { DISPLAY_DPI } from '../../constants/editor';
 import { zplToBase64Async } from 'zpl-renderer-js';
-import { getLabelDimensionsInDots } from '../utils/zplMath';
+import { getLabelDimensionsInDots } from '../../utils/zplMath';
 
 export default function Editor() {
     const { activeLabel, activeLabelId, addObject, deleteObject, selectedObjectId, setSelectedObjectId, updateObject, reorderObject, editorSettings, setEditorSettings, generateZPL } = useProject();
