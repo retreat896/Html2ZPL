@@ -24,8 +24,7 @@ export default function DashboardNavbar({ toggleSidebar }) {
                 {/* User Profile / Logout */}
                 <div className="flex items-center gap-3">
                     <div className="hidden md:flex flex-col items-end">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{user?.name || 'Guest User'}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'Not logged in'}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{user?.username || 'Guest User'}</span>
                     </div>
                     <div className="relative group">
                         <button className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 focus:outline-none ring-2 ring-transparent group-hover:ring-blue-500 transition-all">
