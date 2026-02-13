@@ -9,7 +9,7 @@ export default function DashboardNavbar({ toggleSidebar }) {
     const navigate = useNavigate();
 
     return (
-        <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center justify-between px-4 lg:px-6 relative z-30">
+        <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center justify-between px-4 lg:px-6 relative z-30 sticky top-0">
             <div className="flex items-center gap-4">
                 <button onClick={toggleSidebar} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Toggle Sidebar">
                     <i className="fa-solid fa-bars text-xl"></i>

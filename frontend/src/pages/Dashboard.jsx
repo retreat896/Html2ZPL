@@ -23,6 +23,7 @@ export default function Dashboard() {
     const [pendingTemplate, setPendingTemplate] = useState(null);
 
     useEffect(() => {
+        document.title = 'HTML2ZPL - Dashboard';
         const loadDashboardData = async () => {
             setLoading(true);
             try {
@@ -72,6 +73,7 @@ export default function Dashboard() {
                     return new Date(b.updated_at) - new Date(a.updated_at);
                 });
                 setRecentProjects(sortedProjects);
+
             } catch (error) {
                 console.error('Error loading dashboard', error);
                 addToast('Failed to load dashboard data', 'error');
@@ -152,12 +154,12 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-white dark:bg-gray-900 overflow-hidden relative">
+        <div className="flex flex-col bg-white dark:bg-gray-900 relative">
             <DashboardNavbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
             <DashboardSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-            <div className="flex-1 overflow-hidden flex flex-col relative z-0">
+            <div className="flex-1 flex flex-col relative z-0">
                 <TemplateGallery templates={myTemplates} publicTemplates={publicTemplates} loading={loading} onCreateNew={handleCreateNew} onSelectTemplate={handleSelectTemplate} />
 
                 <ProjectList projects={recentProjects} loading={loading} onOpenProject={handleOpenProject} onDeleteProject={handleDeleteProject} />

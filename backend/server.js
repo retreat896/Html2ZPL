@@ -10,8 +10,40 @@ const PORT = process.env.PORT || 3000;
 const SECRET_KEY = process.env.SECRET_KEY || 'your_secret_key_here'; // Use .env in production
 
 app.use(cors());
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Enhanced logging middleware for development
+app.use((req, res, next) => {
+    const start = Date.now();
+    const timestamp = new Date().toISOString();
+
+    console.log(`[${timestamp}] Incoming ${req.method} ${req.url}`);
+
+    if (req.body && Object.keys(req.body).length > 0) {
+        // Avoid logging large data buffers or sensitive info if strict, 
+        // but for dev usage, truncated or full logging is helpful.
+        // We'll log a summary for 'data' fields if they are huge (like images)
+        const bodyLog = { ...req.body };
+        if (bodyLog.data && typeof bodyLog.data === 'string' && bodyLog.data.length > 500) {
+            bodyLog.data = bodyLog.data.substring(0, 50) + '... [TRUNCATED]';
+        }
+        console.log('Body:', JSON.stringify(bodyLog, null, 2));
+    }
+
+    if (req.query && Object.keys(req.query).length > 0) {
+        console.log('Query:', JSON.stringify(req.query, null, 2));
+    }
+
+    // Log response on finish
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`[${new Date().toISOString()}] Completed ${req.method} ${req.url} ${res.statusCode} (${duration}ms)`);
+    });
+
+    next();
+});
 
 // Register Endpoint
 app.post('/register', async (req, res) => {
@@ -31,6 +63,7 @@ app.post('/register', async (req, res) => {
         if (err.message.includes('UNIQUE constraint failed')) {
             return res.status(400).json({ error: 'Username already exists' });
         }
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -59,6 +92,7 @@ app.post('/login', async (req, res) => {
         const token = jwt.sign({ id: user.id, username: user.username }, SECRET_KEY, { expiresIn: '1h' });
         res.json({ message: 'Login successful', token });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -71,7 +105,10 @@ const authenticateToken = (req, res, next) => {
     if (!token) return res.sendStatus(401);
 
     jwt.verify(token, SECRET_KEY, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) {
+            console.error('JWT Verification Failed:', err.message);
+            return res.sendStatus(403);
+        }
         req.user = user;
         next();
     });
@@ -90,6 +127,7 @@ app.get('/projects', authenticateToken, (req, res) => {
         const projects = stmt.all(req.user.id);
         res.json(projects);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -120,6 +158,7 @@ app.post('/projects', authenticateToken, (req, res) => {
             res.json({ message: 'Project saved', id: result.lastInsertRowid });
         }
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -132,6 +171,7 @@ app.get('/projects/:id', authenticateToken, (req, res) => {
         if (!project) return res.status(404).json({ error: 'Project not found' });
         res.json(project);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -143,6 +183,7 @@ app.get('/public/templates', (req, res) => {
         const projects = stmt.all();
         res.json(projects);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -155,6 +196,7 @@ app.get('/public/projects/:id', (req, res) => {
         if (!project) return res.status(404).json({ error: 'Project not found or not public' });
         res.json(project);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -168,6 +210,7 @@ app.post('/projects/:id/publish', authenticateToken, (req, res) => {
         if (result.changes === 0) return res.status(404).json({ error: 'Project not found or unauthorized' });
         res.json({ message: `Project ${isPublic ? 'published' : 'unpublished'}` });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -180,6 +223,7 @@ app.delete('/projects/:id', authenticateToken, (req, res) => {
         if (result.changes === 0) return res.status(404).json({ error: 'Project not found or unauthorized' });
         res.json({ success: true, message: 'Project deleted' });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -195,6 +239,7 @@ app.get('/settings', authenticateToken, (req, res) => {
             res.json({}); // Default empty if none exist
         }
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -213,6 +258,7 @@ app.put('/settings', authenticateToken, (req, res) => {
         stmt.run(req.user.id, JSON.stringify(settings));
         res.json({ message: 'Settings saved' });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });

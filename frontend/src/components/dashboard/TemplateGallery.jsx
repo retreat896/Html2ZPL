@@ -91,6 +91,7 @@ export default function TemplateGallery({ templates, publicTemplates, loading, o
                         ))}
                 </div>
             </div>
+            <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
         </div>
     );
 }
