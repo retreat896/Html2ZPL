@@ -87,6 +87,7 @@ export default function ProjectList({ projects, loading, onOpenProject, onDelete
                     </div>
                 )}
             </div>
+            <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
         </div>
     );
 }
