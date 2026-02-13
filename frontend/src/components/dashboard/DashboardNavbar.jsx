@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import LoginModal from '../common/LoginModal';
 
 export default function DashboardNavbar({ toggleSidebar }) {
     const { user, logout } = useAuth();
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+    const navigate = useNavigate();
 
     return (
         <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center justify-between px-4 lg:px-6 relative z-30">
@@ -12,11 +14,11 @@ export default function DashboardNavbar({ toggleSidebar }) {
                 <button onClick={toggleSidebar} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Toggle Sidebar">
                     <i className="fa-solid fa-bars text-xl"></i>
                 </button>
-                <div className="p-1 flex items-center gap-2 cursor-pointer  cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" onClick={() => navigate('/')}>
+                <div className="p-1 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" onClick={() => navigate('/')}>
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                         <img className="shrink-0 cursor-pointer" src="/favicon.svg" alt="Logo" title="Back to Dashboard" />
                     </div>
-                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Html2ZPL</span>
+                    <span className="text-xl font-bold text-brand-gradient inline-block">Html2ZPL</span>
                 </div>
             </div>
 

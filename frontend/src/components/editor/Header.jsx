@@ -44,7 +44,7 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                             <img className="shrink-0 cursor-pointer" src="/favicon.svg" alt="Logo" title="Back to Dashboard" />
                         </div>
-                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Html2ZPL</span>
+                        <span className="text-xl font-bold text-brand-gradient inline-block">Html2ZPL</span>
                     </div>
                 </div>
 
