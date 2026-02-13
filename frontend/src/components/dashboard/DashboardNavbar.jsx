@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import LoginModal from '../common/LoginModal';
 
@@ -14,12 +14,12 @@ export default function DashboardNavbar({ toggleSidebar }) {
                 <button onClick={toggleSidebar} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Toggle Sidebar">
                     <i className="fa-solid fa-bars text-xl"></i>
                 </button>
-                <div className="p-1 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" onClick={() => navigate('/')}>
+                <Link to="/" className="p-1 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                         <img className="shrink-0 cursor-pointer" src="/favicon.svg" alt="Logo" title="Back to Dashboard" />
                     </div>
                     <span className="text-xl font-bold text-brand-gradient inline-block">Html2ZPL</span>
-                </div>
+                </Link>
             </div>
 
             <div className="flex items-center gap-4">

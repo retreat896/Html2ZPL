@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -15,8 +15,9 @@ export default function EditorLayout() {
     const navigate = useNavigate();
     const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(() => window.innerWidth >= 1024);
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => window.innerWidth >= 1024);
-    const { setProject, setActiveLabelId, loadFromCloud, rehydrateProject, setInteractionMode } = useProject();
+    const { project, setProject, setActiveLabelId, loadFromCloud, rehydrateProject, setInteractionMode, saveToCloud } = useProject();
     const { addToast } = useToast();
+    const isLoadingRef = useRef(false);
 
     // Handle responsive behavior
     useEffect(() => {
@@ -44,70 +45,89 @@ export default function EditorLayout() {
     // Load Project Logic
     useEffect(() => {
         const initEditor = async () => {
+            if (isLoadingRef.current) return;
+            isLoadingRef.current = true; // Block subsequent calls immediately
+
             setInteractionMode('design'); // Ensure we are in design mode to allow editing
 
+            // Optimization: If we are already on the right project (UUID or ID matches), don't reload
+            if (project && (project.uuid === projectId || String(project.id) === projectId)) {
+                isLoadingRef.current = false;
+                return;
+            }
+
             if (projectId === 'new') {
-                // Check if we have template state passed via navigation
-                const templateState = location.state?.template;
+                try {
+                    // Check if we have template state passed via navigation
+                    const templateState = location.state?.template;
 
-                if (templateState) {
-                    // Initialize from template
-                    // Deep copy to avoid mutating the template itself
-                    // Remove IDs to ensure it's treated as new
-                    const newProject = JSON.parse(JSON.stringify(templateState));
-                    newProject.id = undefined; // Will be assigned on save or we can assign a temp one?
-                    // The backend assigns ID on create normally?
-                    // Actually `saveToCloud` in Context:
-                    // `const res = await fetch(\`\${API_URL}/projects\`, ...)`
-                    // Backend returns ID.
+                    if (templateState) {
+                        // Initialize from template
+                        // Deep copy to avoid mutating the template itself
+                        // Remove IDs to ensure it's treated as new
+                        const newProject = JSON.parse(JSON.stringify(templateState));
+                        newProject.id = undefined; // Will be assigned on save or we can assign a temp one?
+                        // The backend assigns ID on create normally?
+                        // Actually `saveToCloud` in Context:
+                        // `const res = await fetch(\`\${API_URL}/projects\`, ...)`
+                        // Backend returns ID.
 
-                    const customName = location.state?.customName;
-                    newProject.metadata.name = customName || `Copy of ${newProject.metadata.name}`;
-                    newProject.metadata.created = Date.now();
-                    newProject.metadata.isTemplate = false; // It's a project now
+                        const customName = location.state?.customName;
+                        newProject.metadata.name = customName || `Copy of ${newProject.metadata.name}`;
+                        newProject.metadata.created = Date.now();
+                        newProject.metadata.isTemplate = false; // It's a project now
 
-                    // Reset labels IDs
-                    if (newProject.labels) {
-                        newProject.labels = newProject.labels.map((l) => ({
-                            ...l,
-                            id: uuidv4(),
-                        }));
-                    }
-
-                    setProject(newProject);
-                    if (newProject.labels?.length > 0) setActiveLabelId(newProject.labels[0].id);
-                    addToast('Initialized from template', 'success');
-                } else {
-                    // Blank Project
-                    // Context `getInitialProject` (or we can manually reset)
-                    // Currently `ProjectContext` initializes with "New Project".
-                    // If we navigate here, we might want to ensure it is reset if it was previously occupied.
-                    // But `useProject` state persists.
-
-                    // We should probably reset to default if we just came here.
-                    // But if `projectId` is new, `useEffect` runs.
-
-                    // TODO: Add `resetProject` to Context for cleaner blank slate?
-                    // For now, let's create a blank local object
-                    const blankProject = {
-                        version: '1.1',
-                        metadata: {
-                            name: 'New Project',
-                            created: Date.now(),
-                            author: 'User',
-                            isTemplate: false,
-                        },
-                        labels: [
-                            {
+                        // Reset labels IDs
+                        if (newProject.labels) {
+                            newProject.labels = newProject.labels.map((l) => ({
+                                ...l,
                                 id: uuidv4(),
-                                name: 'Label 1',
-                                settings: { width: 4, height: 6, unit: 'inch', dpmm: 8 },
-                                objects: [],
+                            }));
+                        }
+
+                        setProject(newProject);
+                        if (newProject.labels?.length > 0) setActiveLabelId(newProject.labels[0].id);
+                        addToast('Initialized from template', 'success');
+                        isLoadingRef.current = false;
+                    } else {
+                        // Blank Project
+                        const blankProject = {
+                            version: '1.1',
+                            metadata: {
+                                name: 'New Project',
+                                created: Date.now(),
+                                author: 'User',
+                                isTemplate: false,
                             },
-                        ],
-                    };
-                    setProject(blankProject);
-                    setActiveLabelId(blankProject.labels[0].id);
+                            labels: [
+                                {
+                                    id: uuidv4(),
+                                    name: 'Label 1',
+                                    settings: { width: 4, height: 6, unit: 'inch', dpmm: 8 },
+                                    objects: [],
+                                },
+                            ],
+                        };
+                        setProject(blankProject);
+                        setActiveLabelId(blankProject.labels[0].id);
+
+                        // Trigger immediate save to get UUID and ID (if logged in)
+                        // We check if saveToCloud is available/functional (it checks token internally)
+                        saveToCloud(null, blankProject).then(res => {
+                            if (res.success && res.savedData) {
+                                setProject(res.savedData);
+                                if (res.savedData.uuid) {
+                                    navigate(`/editor/${res.savedData.uuid}`, { replace: true });
+                                }
+                            }
+                            isLoadingRef.current = false;
+                        }).catch(() => {
+                            isLoadingRef.current = false;
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error initializing new project", e);
+                    isLoadingRef.current = false;
                 }
             } else if (projectId) {
                 // Check if project data was passed via navigation (e.g. for local templates)
@@ -121,6 +141,7 @@ export default function EditorLayout() {
                             setActiveLabelId(rehydrated.labels[0].id);
                         }
                         // Skip cloud load if we have data
+                        isLoadingRef.current = false;
                         return;
                     } catch (e) {
                         console.error('Failed to rehydrate passed project data', e);
@@ -130,6 +151,7 @@ export default function EditorLayout() {
 
                 // Load existing project from cloud
                 const res = await loadFromCloud(projectId);
+                isLoadingRef.current = false; // Reset after load attempt
                 if (!res.success) {
                     addToast('Failed to load project: ' + res.error, 'error');
                     navigate('/'); // Back to dashboard on failure

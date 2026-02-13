@@ -147,15 +147,40 @@ app.post('/projects', authenticateToken, (req, res) => {
         const isTemplateVal = isTemplate ? 1 : 0;
         if (id) {
             // Update
-            const stmt = db.prepare('UPDATE projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
-            const result = stmt.run(name, data, isTemplateVal, id, req.user.id);
+            // Check if ID is integer (legacy ID) or UUID string
+            // actually frontend sends whatever it has.
+            // If it's a UUID, we need to find the ID first? Or just update by UUID?
+            // Our DB schema uses ID as primary key.
+            // Let's assume for update, if we have a numeric ID we use it. 
+            // If we have a UUID string passed as 'id', we should handle that too?
+            // For now, let's stick to ID being the primary key ID if possible, 
+            // OR update the logic to handle UUID.
+
+            let stmt;
+            let result;
+
+            // Basic check if id is likely a UUID (length > 20 and not purely numeric)
+            const isUuid = isNaN(id) && typeof id === 'string' && id.length > 20;
+
+            if (isUuid) {
+                stmt = db.prepare('UPDATE projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ? AND user_id = ?');
+                result = stmt.run(name, data, isTemplateVal, id, req.user.id);
+            } else {
+                stmt = db.prepare('UPDATE projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+                result = stmt.run(name, data, isTemplateVal, id, req.user.id);
+            }
+
             if (result.changes === 0) return res.status(404).json({ error: 'Project not found or unauthorized' });
+
+            // Return both ID and UUID if possible. If we updated by UUID, we might want to return the integer ID too?
+            // For now, just return success.
             res.json({ message: 'Project updated', id });
         } else {
             // Create
-            const stmt = db.prepare('INSERT INTO projects (user_id, name, data, is_template) VALUES (?, ?, ?, ?)');
-            const result = stmt.run(req.user.id, name, data, isTemplateVal);
-            res.json({ message: 'Project saved', id: result.lastInsertRowid });
+            const uuid = require('crypto').randomUUID();
+            const stmt = db.prepare('INSERT INTO projects (user_id, name, data, is_template, uuid) VALUES (?, ?, ?, ?, ?)');
+            const result = stmt.run(req.user.id, name, data, isTemplateVal, uuid);
+            res.json({ message: 'Project saved', id: result.lastInsertRowid, uuid });
         }
     } catch (err) {
         console.error(err);
@@ -166,8 +191,21 @@ app.post('/projects', authenticateToken, (req, res) => {
 // Load a specific project
 app.get('/projects/:id', authenticateToken, (req, res) => {
     try {
-        const stmt = db.prepare('SELECT * FROM projects WHERE id = ? AND user_id = ?');
-        const project = stmt.get(req.params.id, req.user.id);
+        const { id } = req.params;
+        let stmt;
+        let project;
+
+        // Check if ID is likely a UUID
+        const isUuid = isNaN(id) && typeof id === 'string' && id.length > 20;
+
+        if (isUuid) {
+            stmt = db.prepare('SELECT * FROM projects WHERE uuid = ? AND user_id = ?');
+            project = stmt.get(id, req.user.id);
+        } else {
+            stmt = db.prepare('SELECT * FROM projects WHERE id = ? AND user_id = ?');
+            project = stmt.get(id, req.user.id);
+        }
+
         if (!project) return res.status(404).json({ error: 'Project not found' });
         res.json(project);
     } catch (err) {
@@ -191,8 +229,20 @@ app.get('/public/templates', (req, res) => {
 // Get Specific Public Project/Template
 app.get('/public/projects/:id', (req, res) => {
     try {
-        const stmt = db.prepare('SELECT * FROM projects WHERE id = ? AND is_public = 1');
-        const project = stmt.get(req.params.id);
+        const { id } = req.params;
+        let stmt;
+        let project;
+
+        const isUuid = isNaN(id) && typeof id === 'string' && id.length > 20;
+
+        if (isUuid) {
+            stmt = db.prepare('SELECT * FROM projects WHERE uuid = ? AND is_public = 1');
+            project = stmt.get(id);
+        } else {
+            stmt = db.prepare('SELECT * FROM projects WHERE id = ? AND is_public = 1');
+            project = stmt.get(id);
+        }
+
         if (!project) return res.status(404).json({ error: 'Project not found or not public' });
         res.json(project);
     } catch (err) {

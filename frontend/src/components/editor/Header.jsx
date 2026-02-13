@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import LoginModal from '../common/LoginModal';
@@ -40,12 +40,12 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                         <i className="fa-solid fa-bars text-xl"></i>
                     </button>
 
-                    <div className="p-1 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" onClick={() => navigate('/')}>
+                    <Link to="/" className="p-1 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                             <img className="shrink-0 cursor-pointer" src="/favicon.svg" alt="Logo" title="Back to Dashboard" />
                         </div>
                         <span className="text-xl font-bold text-brand-gradient inline-block">Html2ZPL</span>
-                    </div>
+                    </Link>
                 </div>
 
                 {/* Right Side: Actions + User */}
@@ -118,12 +118,12 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                             />
                         </label>
 
-                        <button
-                            onClick={() => navigate('/')}
+                        <Link
+                            to="/"
                             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-900/50 rounded-lg text-sm font-medium transition-colors">
                             <i className="fa-solid fa-house"></i>
                             Dashboard
-                        </button>
+                        </Link>
 
                         <button onClick={() => setIsShareModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

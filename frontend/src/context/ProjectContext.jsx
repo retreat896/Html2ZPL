@@ -383,6 +383,8 @@ export const ProjectProvider = ({ children }) => {
             // NOTE: The argument 'nameObj' might be the name string OR null/undefined if called without args.
             const nameToUse = nameObj || projectToSave.metadata?.name || 'Untitled Project';
 
+
+
             // Update metadata name if we are using current state,
             // OR if we want to ensure the name is correct in the payload.
             const updatedProject = {
@@ -412,10 +414,15 @@ export const ProjectProvider = ({ children }) => {
 
             const result = await res.json();
 
-            // Update local project with the backend ID (essential for new projects)
+            // Update local project with the backend ID and UUID
             if (result.id) {
-                setProject((prev) => ({ ...prev, id: result.id }));
-                updatedProject.id = result.id; // Update local var for return
+                setProject((prev) => ({
+                    ...prev,
+                    id: result.id,
+                    uuid: result.uuid || prev.uuid // Store UUID if returned
+                }));
+                updatedProject.id = result.id;
+                if (result.uuid) updatedProject.uuid = result.uuid;
             }
 
             return { success: true, savedData: updatedProject };
@@ -463,6 +470,7 @@ export const ProjectProvider = ({ children }) => {
 
             // Attach backend metadata
             rehydrated.id = backendProject.id;
+            rehydrated.uuid = backendProject.uuid; // Attach UUID
             rehydrated.is_public = backendProject.is_public;
 
             setProject(rehydrated);
