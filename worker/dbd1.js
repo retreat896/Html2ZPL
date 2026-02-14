@@ -13,6 +13,7 @@ export const createTables = async (db) => {
                 data TEXT NOT NULL,
                 is_template BOOLEAN DEFAULT 0,
                 is_public BOOLEAN DEFAULT 0,
+                uuid TEXT UNIQUE,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(user_id) REFERENCES zpl_users(id)
             );

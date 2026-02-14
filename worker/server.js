@@ -273,7 +273,9 @@ app.post('/projects/:id/publish', async (c) => {
         } catch (e) {
             // Migration check
             if (e.message.includes('allow migration') || e.message.includes('column')) {
-                await c.env.DB.prepare("ALTER TABLE zpl_projects ADD COLUMN is_public BOOLEAN DEFAULT 0").run();
+                try {
+                    await c.env.DB.prepare("ALTER TABLE zpl_projects ADD COLUMN is_public BOOLEAN DEFAULT 0").run();
+                } catch (ignore) { }
                 // Retry
                 const result = await c.env.DB.prepare('UPDATE zpl_projects SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
                     .bind(isPublic ? 1 : 0, id, payload.id)
