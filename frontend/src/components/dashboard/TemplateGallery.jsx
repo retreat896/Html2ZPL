@@ -57,8 +57,21 @@ export default function TemplateGallery({ templates, publicTemplates, loading, o
                                 <button
                                     onClick={() => onSelectTemplate(template)}
                                     className="bg-white dark:bg-gray-800 hover:border-blue-500 dark:hover:border-blue-500 border border-gray-200 dark:border-gray-700 rounded-lg w-36 h-48 flex flex-col transition-all relative overflow-hidden text-left">
-                                    <div className="flex-1 bg-gray-100 dark:bg-gray-900/50 w-full flex items-center justify-center border-b border-gray-100 dark:border-gray-700">
-                                        <i className="fa-solid fa-file-lines text-3xl text-gray-300 dark:text-gray-600"></i>
+                                    <div className="flex-1 bg-gray-100 dark:bg-gray-900/50 w-full flex items-center justify-center border-b border-gray-100 dark:border-gray-700 overflow-hidden relative">
+                                        {template.thumbnail_small ? (
+                                            <img
+                                                src={template.thumbnail_small}
+                                                alt={template.metadata?.name}
+                                                className="w-full h-full object-cover object-top"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.innerHTML = '<i class="fa-solid fa-file-lines text-3xl text-gray-300 dark:text-gray-600"></i>';
+                                                    e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                                                }}
+                                            />
+                                        ) : (
+                                            <i className="fa-solid fa-file-lines text-3xl text-gray-300 dark:text-gray-600"></i>
+                                        )}
                                     </div>
                                     <div className="p-3">
                                         <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate" title={template.metadata?.name}>
@@ -77,8 +90,21 @@ export default function TemplateGallery({ templates, publicTemplates, loading, o
                                 <button
                                     onClick={() => onSelectTemplate(template)}
                                     className="bg-white dark:bg-gray-800 hover:border-blue-500 dark:hover:border-blue-500 border border-gray-200 dark:border-gray-700 rounded-lg w-36 h-48 flex flex-col transition-all relative overflow-hidden text-left">
-                                    <div className="flex-1 bg-purple-50 dark:bg-purple-900/10 w-full flex items-center justify-center border-b border-gray-100 dark:border-gray-700">
-                                        <i className="fa-solid fa-globe text-3xl text-purple-300 dark:text-purple-600"></i>
+                                    <div className="flex-1 bg-purple-50 dark:bg-purple-900/10 w-full flex items-center justify-center border-b border-gray-100 dark:border-gray-700 overflow-hidden relative">
+                                        {template.thumbnail_small ? (
+                                            <img
+                                                src={template.thumbnail_small}
+                                                alt={template.metadata?.name}
+                                                className="w-full h-full object-cover object-top"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.innerHTML = '<i class="fa-solid fa-globe text-3xl text-purple-300 dark:text-purple-600"></i>';
+                                                    e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                                                }}
+                                            />
+                                        ) : (
+                                            <i className="fa-solid fa-globe text-3xl text-purple-300 dark:text-purple-600"></i>
+                                        )}
                                     </div>
                                     <div className="p-3">
                                         <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate" title={template.metadata?.name}>

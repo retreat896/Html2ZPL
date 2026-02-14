@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import ObjectRegistry from '../classes/ObjectRegistry';
 import { getZplCoordinates, getLabelDimensionsInDots } from '../utils/zplMath';
 import { parseZPL } from '../utils/zplParser';
+import { generateThumbnails } from '../utils/thumbnailUtils';
 
 const ProjectContext = createContext();
 
@@ -396,6 +397,51 @@ export const ProjectProvider = ({ children }) => {
                 setProject(updatedProject);
             }
 
+            // Generate thumbnails
+            // We need ZPL for the thumbnail. We can use the current active label, or the first label.
+            // Using the active label is probably what the user expects (what they are working on).
+            // But if called from auto-save loop without user interacton, "activeLabelId" might be stale in closure?
+            // "projectToSave" has labels. We should find the active one or first one.
+
+            // Re-find active label from projectToSave
+            // If activeLabelId is available in scope, we can use it, but safe to check projectToSave.labels
+            const labelForThumbnail = projectToSave.labels.find(l => l.id === activeLabelId) || projectToSave.labels[0];
+
+            let thumbnailSmall = null;
+            let thumbnailLarge = null;
+
+            if (labelForThumbnail) {
+                // We need to generate ZPL for this label.
+                // We can't reuse "generateZPL" function easily because it relies on state (templateValues),
+                // but we can duplicate the logic or extract it. 
+                // "generateZPL" uses "project" from state closure which might be old? 
+                // Actually "generateZPL" uses "project" from closure.
+                // Let's use the helper logic from "generateZPL" but adapted for "projectToSave"
+
+                // Helper to generate ZPL for a specific label object
+                const generateZPLForLabel = (label) => {
+                    const { width, height, dpmm, unit } = label.settings;
+                    const { width: printWidth, height: labelLength } = getLabelDimensionsInDots(width, height, dpmm, unit);
+                    let zpl = `^XA\n^PW${printWidth}\n^LL${labelLength}\n^PON\n`;
+                    label.objects.forEach((obj, index) => {
+                        const def = ObjectRegistry.get(obj.type);
+                        if (def && def.class) {
+                            const convertedObj = getZplCoordinates(obj, label.settings);
+                            const instance = new def.class(convertedObj);
+                            Object.assign(instance, convertedObj);
+                            zpl += instance.toZPL(index, templateValues) + '\n';
+                        }
+                    });
+                    zpl += '^XZ';
+                    return zpl;
+                };
+
+                const zpl = generateZPLForLabel(labelForThumbnail);
+                const thumbs = await generateThumbnails(zpl, labelForThumbnail.settings);
+                thumbnailSmall = thumbs.thumbnailSmall;
+                thumbnailLarge = thumbs.thumbnailLarge;
+            }
+
             const res = await fetch(`${API_URL}/projects`, {
                 method: 'POST',
                 headers: {
@@ -407,6 +453,8 @@ export const ProjectProvider = ({ children }) => {
                     name: nameToUse,
                     data: JSON.stringify(updatedProject),
                     isTemplate: updatedProject.metadata?.isTemplate || false,
+                    thumbnailSmall,
+                    thumbnailLarge
                 }),
             });
 

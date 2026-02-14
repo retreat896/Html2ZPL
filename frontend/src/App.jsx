@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import EditorLayout from './components/editor/EditorLayout';
+import EditorPage from './pages/EditorPage';
 import Dashboard from './pages/Dashboard';
 import TemplatesView from './components/dashboard/TemplatesView';
 import MetaTags from './components/common/MetaTags';
@@ -28,8 +28,8 @@ function App() {
                         <Routes>
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/templates" element={<TemplatesView />} />
-                            {/* <Route path="/editor/new" element={<EditorLayout />} />  Removed to let :projectId handle 'new' */}
-                            <Route path="/editor/:projectId" element={<EditorLayout />} />
+                            {/* <Route path="/editor/new" element={<EditorPage />} />  Removed to let :projectId handle 'new' */}
+                            <Route path="/editor/:projectId" element={<EditorPage />} />
                             <Route path="*" element={<Navigate to="/" replace />} />
                         </Routes>
                     </ProjectProvider>

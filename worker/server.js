@@ -94,7 +94,7 @@ app.get('/projects', async (c) => {
     const payload = c.get('jwtPayload');
     try {
         const { results } = await c.env.DB.prepare(`
-            SELECT id, name, is_template, is_public, updated_at, 
+            SELECT id, name, is_template, is_public, updated_at, thumbnail_small,
             json_array_length(json_extract(data, '$.labels')) as label_count 
             FROM zpl_projects 
             WHERE user_id = ? 
@@ -113,7 +113,7 @@ app.post('/projects', async (c) => {
     console.log("[POST /projects]");
     const payload = c.get('jwtPayload');
     const body = await c.req.json();
-    const { name, data, id, isTemplate } = body;
+    const { name, data, id, isTemplate, thumbnailSmall, thumbnailLarge } = body;
 
     console.log(`[POST /projects] User: ${payload.id}, Project ID: ${id || 'new'}`);
 
@@ -131,13 +131,13 @@ app.post('/projects', async (c) => {
 
             if (isUuid) {
                 console.log(`[POST /projects] Updating project by UUID: ${id}`);
-                result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ? AND user_id = ?')
-                    .bind(name, data, isTemplateVal, id, payload.id)
+                result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, thumbnail_small = ?, thumbnail_large = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ? AND user_id = ?')
+                    .bind(name, data, isTemplateVal, thumbnailSmall, thumbnailLarge, id, payload.id)
                     .run();
             } else {
                 console.log(`[POST /projects] Updating project by ID: ${id}`);
-                result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
-                    .bind(name, data, isTemplateVal, id, payload.id)
+                result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, thumbnail_small = ?, thumbnail_large = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
+                    .bind(name, data, isTemplateVal, thumbnailSmall, thumbnailLarge, id, payload.id)
                     .run();
             }
 
@@ -147,8 +147,8 @@ app.post('/projects', async (c) => {
             const uuid = crypto.randomUUID();
             console.log(`[POST /projects] Creating new project with UUID: ${uuid}`);
 
-            const stmt = c.env.DB.prepare('INSERT INTO zpl_projects (user_id, name, data, is_template, uuid) VALUES (?, ?, ?, ?, ?)')
-                .bind(payload.id, name, data, isTemplateVal, uuid);
+            const stmt = c.env.DB.prepare('INSERT INTO zpl_projects (user_id, name, data, is_template, uuid, thumbnail_small, thumbnail_large) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                .bind(payload.id, name, data, isTemplateVal, uuid, thumbnailSmall, thumbnailLarge);
             console.log('[POST /projects] Executing query:', stmt);
             const result = await stmt.run();
 
@@ -191,7 +191,7 @@ app.get('/projects/:id', async (c) => {
 app.get('/public/templates', async (c) => {
     try {
         // Since this is public, no auth needed
-        const { results } = await c.env.DB.prepare('SELECT id, name, is_template, is_public, updated_at FROM zpl_projects WHERE is_public = 1 ORDER BY updated_at DESC').all();
+        const { results } = await c.env.DB.prepare('SELECT id, name, is_template, is_public, updated_at, thumbnail_small FROM zpl_projects WHERE is_public = 1 ORDER BY updated_at DESC').all();
         return c.json(results);
     } catch (err) {
         return c.json({ error: err.message }, 500);

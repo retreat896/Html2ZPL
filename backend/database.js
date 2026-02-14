@@ -39,9 +39,11 @@ try {
 }
 
 
+
+const getTableInfo = () => db.prepare("PRAGMA table_info(projects)").all();
+
 // Migration: Add is_template column
 try {
-  const getTableInfo = () => db.prepare("PRAGMA table_info(projects)").all();
 
   const columns = getTableInfo();
   if (!columns.some(c => c.name === 'is_template')) {
@@ -86,6 +88,28 @@ try {
   }
 } catch (e) {
   if (!e.message.includes('duplicate column name')) console.error("Migration error (uuid):", e.message);
+}
+
+// Migration: Add thumbnail_small column
+try {
+  const columns = getTableInfo();
+  if (!columns.some(c => c.name === 'thumbnail_small')) {
+    db.exec("ALTER TABLE projects ADD COLUMN thumbnail_small TEXT");
+    console.log("Added thumbnail_small column to projects table.");
+  }
+} catch (e) {
+  if (!e.message.includes('duplicate column name')) console.error("Migration error (thumbnail_small):", e.message);
+}
+
+// Migration: Add thumbnail_large column
+try {
+  const columns = getTableInfo();
+  if (!columns.some(c => c.name === 'thumbnail_large')) {
+    db.exec("ALTER TABLE projects ADD COLUMN thumbnail_large TEXT");
+    console.log("Added thumbnail_large column to projects table.");
+  }
+} catch (e) {
+  if (!e.message.includes('duplicate column name')) console.error("Migration error (thumbnail_large):", e.message);
 }
 
 const createUserSettingsTable = `

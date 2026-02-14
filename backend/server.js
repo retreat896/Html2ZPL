@@ -118,7 +118,7 @@ const authenticateToken = (req, res, next) => {
 app.get('/projects', authenticateToken, (req, res) => {
     try {
         const stmt = db.prepare(`
-            SELECT id, name, is_template, is_public, updated_at, 
+            SELECT id, name, is_template, is_public, updated_at, thumbnail_small,
             json_array_length(json_extract(data, '$.labels')) as label_count 
             FROM projects 
             WHERE user_id = ? 
@@ -137,7 +137,7 @@ app.get('/projects', authenticateToken, (req, res) => {
 // but usually the frontend might send ID if it knows it.
 // Let's implement: POST /projects to create, PUT /projects/:id to update.
 app.post('/projects', authenticateToken, (req, res) => {
-    const { name, data, id, isTemplate } = req.body;
+    const { name, data, id, isTemplate, thumbnailSmall, thumbnailLarge } = req.body;
 
     if (!name || !data) {
         return res.status(400).json({ error: 'Name and data required' });
@@ -163,11 +163,11 @@ app.post('/projects', authenticateToken, (req, res) => {
             const isUuid = isNaN(id) && typeof id === 'string' && id.length > 20;
 
             if (isUuid) {
-                stmt = db.prepare('UPDATE projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ? AND user_id = ?');
-                result = stmt.run(name, data, isTemplateVal, id, req.user.id);
+                stmt = db.prepare('UPDATE projects SET name = ?, data = ?, is_template = ?, thumbnail_small = ?, thumbnail_large = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ? AND user_id = ?');
+                result = stmt.run(name, data, isTemplateVal, thumbnailSmall, thumbnailLarge, id, req.user.id);
             } else {
-                stmt = db.prepare('UPDATE projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
-                result = stmt.run(name, data, isTemplateVal, id, req.user.id);
+                stmt = db.prepare('UPDATE projects SET name = ?, data = ?, is_template = ?, thumbnail_small = ?, thumbnail_large = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?');
+                result = stmt.run(name, data, isTemplateVal, thumbnailSmall, thumbnailLarge, id, req.user.id);
             }
 
             if (result.changes === 0) return res.status(404).json({ error: 'Project not found or unauthorized' });
@@ -178,8 +178,8 @@ app.post('/projects', authenticateToken, (req, res) => {
         } else {
             // Create
             const uuid = require('crypto').randomUUID();
-            const stmt = db.prepare('INSERT INTO projects (user_id, name, data, is_template, uuid) VALUES (?, ?, ?, ?, ?)');
-            const result = stmt.run(req.user.id, name, data, isTemplateVal, uuid);
+            const stmt = db.prepare('INSERT INTO projects (user_id, name, data, is_template, uuid, thumbnail_small, thumbnail_large) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            const result = stmt.run(req.user.id, name, data, isTemplateVal, uuid, thumbnailSmall, thumbnailLarge);
             res.json({ message: 'Project saved', id: result.lastInsertRowid, uuid });
         }
     } catch (err) {
@@ -217,7 +217,7 @@ app.get('/projects/:id', authenticateToken, (req, res) => {
 // Get Public Templates
 app.get('/public/templates', (req, res) => {
     try {
-        const stmt = db.prepare('SELECT id, name, is_template, is_public, updated_at FROM projects WHERE is_public = 1 ORDER BY updated_at DESC');
+        const stmt = db.prepare('SELECT id, name, is_template, is_public, updated_at, thumbnail_small FROM projects WHERE is_public = 1 ORDER BY updated_at DESC');
         const projects = stmt.all();
         res.json(projects);
     } catch (err) {

@@ -192,7 +192,7 @@ export default function TemplatesView() {
 
     return (
         <div className="flex-1 flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
-            <DashboardNavbar toggleSidebar={() => {}} />
+            <DashboardNavbar toggleSidebar={() => { }} />
 
             <div className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-6xl mx-auto w-full">
@@ -284,8 +284,21 @@ export default function TemplatesView() {
                                     {/* Public View Logic */}
                                     {viewMode === 'public' && <div className="absolute top-3 right-3 z-10">{/* Maybe add a 'copy to my templates' button later */}</div>}
 
-                                    <div className="flex-1 flex items-center justify-center bg-gray-100 dark:bg-gray-900/50 rounded-lg mb-4 overflow-hidden">
-                                        <i className="fa-solid fa-file-lines text-4xl text-gray-300 dark:text-gray-600"></i>
+                                    <div className="flex-1 flex items-center justify-center bg-gray-100 dark:bg-gray-900/50 rounded-lg mb-4 overflow-hidden relative">
+                                        {template.thumbnail_small ? (
+                                            <img
+                                                src={template.thumbnail_small}
+                                                alt={template.metadata?.name}
+                                                className="w-full h-full object-cover object-top"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.innerHTML = '<i class="fa-solid fa-file-lines text-4xl text-gray-300 dark:text-gray-600"></i>';
+                                                    e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                                                }}
+                                            />
+                                        ) : (
+                                            <i className="fa-solid fa-file-lines text-4xl text-gray-300 dark:text-gray-600"></i>
+                                        )}
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 dark:text-white truncate" title={template.metadata?.name || 'Untitled'}>

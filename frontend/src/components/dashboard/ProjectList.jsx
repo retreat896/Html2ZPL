@@ -49,38 +49,63 @@ export default function ProjectList({ projects, loading, onOpenProject, onDelete
                         </div>
                     )
                 ) : (
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                         {projects.map((project) => (
                             <div
                                 key={project.id}
                                 onClick={() => onOpenProject(project)}
-                                className="group flex items-center p-4 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-800/50 cursor-pointer border border-transparent hover:border-blue-100 dark:hover:border-gray-700 transition-all">
-                                <div className="flex-shrink-0 mr-4">
-                                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-gray-500 dark:text-gray-400">
-                                        <i className="fa-solid fa-tag"></i>
+                                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all cursor-pointer overflow-hidden flex flex-col h-full relative">
+
+                                {/* Top: Preview */}
+                                <div className="aspect-[8.5/11] w-full bg-gray-100 dark:bg-gray-900/50 relative overflow-hidden border-b border-gray-100 dark:border-gray-700">
+                                    {project.thumbnail_small ? (
+                                        <img
+                                            src={project.thumbnail_small}
+                                            alt={project.name}
+                                            className="w-full h-full object-cover object-top"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.parentElement.innerHTML = '<div class="flex items-center justify-center h-full"><i class="fa-solid fa-tag text-4xl text-gray-300 dark:text-gray-600"></i></div>';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full">
+                                            <i className="fa-solid fa-tag text-4xl text-gray-300 dark:text-gray-600"></i>
+                                        </div>
+                                    )}
+
+                                    {/* Actions Overlay */}
+                                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteProject(project);
+                                            }}
+                                            className="p-2 bg-white/90 dark:bg-gray-800/90 text-gray-500 hover:text-red-600 rounded-lg shadow-sm backdrop-blur-sm transition-colors"
+                                            title="Delete">
+                                            <i className="fa-solid fa-trash text-sm"></i>
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">{project.name || 'Untitled Project'}</h4>
-                                    <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400 space-x-4">
-                                        <span>Opened {project.updated_at ? new Date(project.updated_at).toLocaleDateString() : 'Unknown date'}</span>
+
+                                {/* Bottom: Info */}
+                                <div className="p-4 flex flex-col flex-1">
+                                    <div className="mb-2">
+                                        <h4 className="font-semibold text-gray-900 dark:text-white truncate" title={project.name}>
+                                            {project.name || 'Untitled Project'}
+                                        </h4>
+                                    </div>
+                                    <div className="mt-auto flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-3">
+                                        <span>
+                                            <i className="fa-regular fa-clock mr-1"></i>
+                                            {project.updated_at ? new Date(project.updated_at).toLocaleDateString() : 'Unknown'}
+                                        </span>
                                         <span>•</span>
-                                        <span>{project.label_count !== undefined ? project.label_count : project.labels?.length || 0} Labels</span>
+                                        <span>
+                                            <i className="fa-solid fa-layer-group mr-1"></i>
+                                            {project.label_count !== undefined ? project.label_count : project.labels?.length || 0} Labels
+                                        </span>
                                     </div>
-                                </div>
-                                <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDeleteProject(project);
-                                        }}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                                        title="Delete">
-                                        <i className="fa-solid fa-trash"></i>
-                                    </button>
-                                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                                        <i className="fa-solid fa-ellipsis-vertical"></i>
-                                    </button>
                                 </div>
                             </div>
                         ))}

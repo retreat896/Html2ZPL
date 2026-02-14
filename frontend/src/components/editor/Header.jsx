@@ -50,32 +50,34 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
 
                 {/* Right Side: Actions + User */}
                 <div id="rightPanel" className="flex items-center gap-4">
+
+                    {/* Save Status Indicator */}
+                    {user && project && project.id && (
+                        <div className="mr-2 text-xs font-medium flex items-center gap-1.5 min-w-[80px] justify-end">
+                            {saveStatus === 'saving' && (
+                                <>
+                                    <i className="fa-solid fa-circle-notch fa-spin text-blue-500"></i>
+                                    <span className="text-gray-500 dark:text-gray-400">Saving...</span>
+                                </>
+                            )}
+                            {saveStatus === 'saved' && (
+                                <>
+                                    <i className="fa-solid fa-check text-green-500"></i>
+                                    <span className="text-gray-500 dark:text-gray-400">Saved</span>
+                                </>
+                            )}
+                            {saveStatus === 'unsaved' && <span className="text-gray-400 dark:text-gray-500">Unsaved</span>}
+                            {saveStatus === 'error' && (
+                                <>
+                                    <i className="fa-solid fa-circle-exclamation text-red-500"></i>
+                                    <span className="text-red-500">Error</span>
+                                </>
+                            )}
+                        </div>
+                    )}
                     {/* Desktop Actions */}
                     <div className="hidden lg:flex items-center gap-3">
-                        {/* Save Status Indicator */}
-                        {user && project && project.id && (
-                            <div className="mr-2 text-xs font-medium flex items-center gap-1.5 min-w-[80px] justify-end">
-                                {saveStatus === 'saving' && (
-                                    <>
-                                        <i className="fa-solid fa-circle-notch fa-spin text-blue-500"></i>
-                                        <span className="text-gray-500 dark:text-gray-400">Saving...</span>
-                                    </>
-                                )}
-                                {saveStatus === 'saved' && (
-                                    <>
-                                        <i className="fa-solid fa-check text-green-500"></i>
-                                        <span className="text-gray-500 dark:text-gray-400">Saved</span>
-                                    </>
-                                )}
-                                {saveStatus === 'unsaved' && <span className="text-gray-400 dark:text-gray-500">Unsaved</span>}
-                                {saveStatus === 'error' && (
-                                    <>
-                                        <i className="fa-solid fa-circle-exclamation text-red-500"></i>
-                                        <span className="text-red-500">Error</span>
-                                    </>
-                                )}
-                            </div>
-                        )}
+
 
                         <button
                             onClick={handlePreview}
@@ -92,7 +94,7 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                             className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
                             title="Save Project to ZPL File">
                             <i className="fa-solid fa-download"></i>
-                            Save
+                            Download ZPL
                         </button>
 
                         <label
@@ -148,7 +150,6 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                             </button>
                         )}
                     </div>
-
                     {/* Mobile Menu Button */}
                     <div className="lg:hidden relative" ref={mobileMenuRef}>
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none">
@@ -177,7 +178,7 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                                     }}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                     <i className="fa-solid fa-download w-4 text-center"></i>
-                                    Save
+                                    Download ZPL
                                 </button>
                                 <label className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 cursor-pointer">
                                     <i className="fa-solid fa-upload w-4 text-center"></i>
@@ -253,6 +254,7 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                                 )}
                             </div>
                         )}
+
                     </div>
 
                     {/* GitHub Link */}
