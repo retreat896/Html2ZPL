@@ -79,6 +79,7 @@ app.post('/login', async (c) => {
 // We define a sub-app or just use middleware on paths
 // Hono JWT middleware:
 app.use('/projects/*', (c, next) => {
+    console.log('JWT Middleware called for /projects/*');
     const jwtMiddleware = jwt({ secret: c.env.SECRET_KEY || 'your_secret_key_here', alg: 'HS256' });
     return jwtMiddleware(c, next);
 });
@@ -89,6 +90,7 @@ app.use('/settings', (c, next) => {
 
 // Get all projects
 app.get('/projects', async (c) => {
+    console.log("[GET /projects]");
     const payload = c.get('jwtPayload');
     try {
         const { results } = await c.env.DB.prepare(`
@@ -108,89 +110,54 @@ app.get('/projects', async (c) => {
 
 // Save project
 app.post('/projects', async (c) => {
+    console.log("[POST /projects]");
     const payload = c.get('jwtPayload');
-    const { name, data, id, isTemplate } = await c.req.json();
+    const body = await c.req.json();
+    const { name, data, id, isTemplate } = body;
 
-    if (!name || !data) return c.json({ error: 'Name and data required' }, 400);
+    console.log(`[POST /projects] User: ${payload.id}, Project ID: ${id || 'new'}`);
+
+    if (!name || !data) {
+        console.warn('[POST /projects] Validation failed: missing name or data');
+        return c.json({ error: 'Name and data required' }, 400);
+    }
 
     const isTemplateVal = isTemplate ? 1 : 0;
 
     try {
         if (id) {
-            // Update
-            let success = false;
             let result;
-
-            // Check if ID is likely a UUID
             const isUuid = isNaN(id) && typeof id === 'string' && id.length > 20;
 
-            try {
-                if (isUuid) {
-                    result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ? AND user_id = ?')
-                        .bind(name, data, isTemplateVal, id, payload.id)
-                        .run();
-                } else {
-                    result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
-                        .bind(name, data, isTemplateVal, id, payload.id)
-                        .run();
-                }
-                success = result.success;
-
-            } catch (e) {
-                if (e.message.includes('allow migration') || e.message.includes('column')) {
-                    // Attempt migration for is_template OR uuid
-                    try {
-                        await c.env.DB.prepare("ALTER TABLE zpl_projects ADD COLUMN is_template BOOLEAN DEFAULT 0").run();
-                    } catch (ignore) { }
-                    try {
-                        await c.env.DB.prepare("ALTER TABLE zpl_projects ADD COLUMN uuid TEXT UNIQUE").run();
-                    } catch (ignore) { }
-
-                    // Retry
-                    if (isUuid) {
-                        result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ? AND user_id = ?')
-                            .bind(name, data, isTemplateVal, id, payload.id)
-                            .run();
-                    } else {
-                        result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
-                            .bind(name, data, isTemplateVal, id, payload.id)
-                            .run();
-                    }
-                    success = result.success;
-                } else {
-                    throw e;
-                }
+            if (isUuid) {
+                console.log(`[POST /projects] Updating project by UUID: ${id}`);
+                result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ? AND user_id = ?')
+                    .bind(name, data, isTemplateVal, id, payload.id)
+                    .run();
+            } else {
+                console.log(`[POST /projects] Updating project by ID: ${id}`);
+                result = await c.env.DB.prepare('UPDATE zpl_projects SET name = ?, data = ?, is_template = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
+                    .bind(name, data, isTemplateVal, id, payload.id)
+                    .run();
             }
 
-            // Return success
+            console.log(`[POST /projects] Update result:`, result);
             return c.json({ message: 'Project updated', id });
         } else {
-            // Create
             const uuid = crypto.randomUUID();
-            try {
-                const result = await c.env.DB.prepare('INSERT INTO zpl_projects (user_id, name, data, is_template, uuid) VALUES (?, ?, ?, ?, ?)')
-                    .bind(payload.id, name, data, isTemplateVal, uuid)
-                    .run();
-                return c.json({ message: 'Project saved', id: result.meta?.last_row_id, uuid });
-            } catch (e) {
-                if (e.message.includes('allow migration') || e.message.includes('column')) {
-                    try {
-                        await c.env.DB.prepare("ALTER TABLE zpl_projects ADD COLUMN is_template BOOLEAN DEFAULT 0").run();
-                    } catch (ignore) { }
-                    try {
-                        await c.env.DB.prepare("ALTER TABLE zpl_projects ADD COLUMN uuid TEXT UNIQUE").run();
-                    } catch (ignore) { }
+            console.log(`[POST /projects] Creating new project with UUID: ${uuid}`);
 
-                    const result = await c.env.DB.prepare('INSERT INTO zpl_projects (user_id, name, data, is_template, uuid) VALUES (?, ?, ?, ?, ?)')
-                        .bind(payload.id, name, data, isTemplateVal, uuid)
-                        .run();
-                    return c.json({ message: 'Project saved', id: result.meta?.last_row_id, uuid });
-                } else {
-                    throw e;
-                }
-            }
+            const stmt = c.env.DB.prepare('INSERT INTO zpl_projects (user_id, name, data, is_template, uuid) VALUES (?, ?, ?, ?, ?)')
+                .bind(payload.id, name, data, isTemplateVal, uuid);
+            console.log('[POST /projects] Executing query:', stmt);
+            const result = await stmt.run();
+
+
+            console.log(`[POST /projects] Create result:`, result);
+            return c.json({ message: 'Project saved', id: result.meta?.last_row_id, uuid });
         }
     } catch (err) {
+        console.error('[POST /projects] Exception occurred:', err);
         return c.json({ error: err.message }, 500);
     }
 });
@@ -264,27 +231,11 @@ app.post('/projects/:id/publish', async (c) => {
 
     try {
         // Attempt update
-        try {
-            const result = await c.env.DB.prepare('UPDATE zpl_projects SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
-                .bind(isPublic ? 1 : 0, id, payload.id)
-                .run();
-            if (result.meta?.changes === 0) return c.json({ error: 'Project not found or unauthorized' }, 404);
-            return c.json({ message: `Project ${isPublic ? 'published' : 'unpublished'}` });
-        } catch (e) {
-            // Migration check
-            if (e.message.includes('allow migration') || e.message.includes('column')) {
-                try {
-                    await c.env.DB.prepare("ALTER TABLE zpl_projects ADD COLUMN is_public BOOLEAN DEFAULT 0").run();
-                } catch (ignore) { }
-                // Retry
-                const result = await c.env.DB.prepare('UPDATE zpl_projects SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
-                    .bind(isPublic ? 1 : 0, id, payload.id)
-                    .run();
-                if (result.meta?.changes === 0) return c.json({ error: 'Project not found or unauthorized' }, 404);
-                return c.json({ message: `Project ${isPublic ? 'published' : 'unpublished'}` });
-            }
-            throw e;
-        }
+        const result = await c.env.DB.prepare('UPDATE zpl_projects SET is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
+            .bind(isPublic ? 1 : 0, id, payload.id)
+            .run();
+        if (result.meta?.changes === 0) return c.json({ error: 'Project not found or unauthorized' }, 404);
+        return c.json({ message: `Project ${isPublic ? 'published' : 'unpublished'}` });
     } catch (err) {
         return c.json({ error: err.message }, 500);
     }
