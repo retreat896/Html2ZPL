@@ -94,14 +94,14 @@ See [Live Demo](https://html2zpl.vercel.app/) for the current working example of
 - **Options**: configure ZPL element attributes **(Implemented)**
 
 ### Saving & Loading
-![Not Started](https://img.shields.io/badge/Status-Not_Started-red?style=flat)  
-- Local save & load (browser storage) **(Not Started)**
-- Cloud save/load integration **(Not Started)**
+![Status: Implemented](https://img.shields.io/badge/Status-Implemented-blue?style=flat)  
+- Local save & load (browser storage) **(Implemented)**
+- Cloud save/load integration **(Implemented)**
 
 ### API and Database Integration
-![Not Started](https://img.shields.io/badge/Status-Not_Started-red?style=flat)  
-- API integration for cloud save/load **(Not Started)** 
-- Database integration for cloud save/load **(Not Started)**
+![Status: Implemented](https://img.shields.io/badge/Status-Implemented-blue?style=flat)   
+- API integration for cloud save/load **(Implemented)** 
+- Database integration for cloud save/load **(Implemented)**
 
 ### Other Label Languages
 ![Not Started](https://img.shields.io/badge/Status-Not_Started-red?style=flat)  
@@ -170,11 +170,11 @@ npm run preview
 -   [x] **`Basic Saving`**: Implement Label saving and item saving to "Cloud" using API.
 -   [x] **`Basic Export`**: Implement Exporting to ZPL code from HTML Dom.
 -   [x] **`Basic Import`**: Implement a way to import ZPL code into HTML.
--   [ ] **`API Creation`**: Implement an API to allow users to save and load their labels. 
--   [ ] **`Database Integration`**: Implement a database to allow users to save and load their labels.  
--   [ ] **`UI Overhaul`**: Implement a flat modern style GUI for the application.
+-   [x] **`API Creation`**: Implement an API to allow users to save and load their labels. 
+-   [x] **`Database Integration`**: Implement a database to allow users to save and load their labels.  
+-   [x] **`UI Overhaul`**: Implement a flat modern style GUI for the application.
 -   [ ] **`Advanced API Integration`**: Add more complex features to the API like user login, OAuth, and more.
--   [ ] **`Advanced Saving`**: Implement a project manager to allow saving multiple label sets, sharing, and storage options.
+-   [x] **`Advanced Saving`**: Implement a project manager to allow saving multiple label sets, sharing, and storage options.
 -   [ ] **`Advanced Items`**: Implements advanced items such as Images and possibly custom user items.
 -   [ ] **`Final UI Design`**: Implement the final UI design for the application.
 
