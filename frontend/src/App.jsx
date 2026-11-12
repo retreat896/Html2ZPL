@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import EditorPage from './pages/EditorPage';
-import Dashboard from './pages/Dashboard';
+import EditorLayout from './components/editor/EditorLayout';
+import HomePage from './pages/HomePage';
 import TemplatesView from './components/dashboard/TemplatesView';
 import MetaTags from './components/common/MetaTags';
 import { ToastProvider } from './context/ToastContext';
@@ -13,10 +13,6 @@ function App() {
     useEffect(() => {
         initConsoleWrapper();
 
-        // Check for dark mode preference
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.classList.add('dark');
-        }
     }, []);
 
     return (
@@ -26,10 +22,9 @@ function App() {
                     <ProjectProvider>
                         <MetaTags />
                         <Routes>
-                            <Route path="/" element={<Dashboard />} />
+                            <Route path="/" element={<HomePage />} />
                             <Route path="/templates" element={<TemplatesView />} />
-                            {/* <Route path="/editor/new" element={<EditorPage />} />  Removed to let :projectId handle 'new' */}
-                            <Route path="/editor/:projectId" element={<EditorPage />} />
+                            <Route path="/editor/:projectId" element={<EditorLayout />} />
                             <Route path="*" element={<Navigate to="/" replace />} />
                         </Routes>
                     </ProjectProvider>

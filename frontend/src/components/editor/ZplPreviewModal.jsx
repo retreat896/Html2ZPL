@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../../context/ProjectContext';
 import { zplToBase64Async } from 'zpl-renderer-js';
+import { useToast } from '../../context/ToastContext';
 
 export default function ZplPreviewModal() {
-    const { isPreviewOpen, setIsPreviewOpen, generateZPL, activeLabelId, activeLabel } = useProject();
+    const { isPreviewOpen, setIsPreviewOpen, generateZPL, activeLabelId, activeLabel, saveProject } = useProject();
+    const { addToast } = useToast();
     const [zplCode, setZplCode] = useState('');
     const [imageUrl, setImageUrl] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -86,7 +88,7 @@ export default function ZplPreviewModal() {
                     <div className="w-1/2 flex flex-col bg-gray-200 dark:bg-gray-900">
                         <div className="px-4 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 uppercase tracking-wider flex justify-between items-center">
                             <span>Preview</span>
-                            {isLoading && <span className="text-blue-500">Loading...</span>}
+                            {isLoading && <span className="text-brand-500">Loading...</span>}
                         </div>
                         <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
                             {error ? (
@@ -106,14 +108,28 @@ export default function ZplPreviewModal() {
                 {/* Footer */}
                 <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-end gap-3">
                     <button
-                        onClick={() => {
-                            navigator.clipboard.writeText(zplCode);
-                            // Could add a toast here
+                        onClick={async () => {
+                            try {
+                                await navigator.clipboard.writeText(zplCode);
+                                addToast('ZPL copied to clipboard', 'success');
+                            } catch {
+                                addToast('Could not copy ZPL', 'error');
+                            }
                         }}
-                        className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        disabled={!zplCode}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+                        <i className="fa-regular fa-copy"></i>
                         Copy ZPL
                     </button>
-                    <button onClick={() => setIsPreviewOpen(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                    <button
+                        onClick={saveProject}
+                        disabled={!zplCode}
+                        title="Download the label as a .zpl file (re-importable)"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+                        <i className="fa-solid fa-download"></i>
+                        Download ZPL
+                    </button>
+                    <button onClick={() => setIsPreviewOpen(false)} className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700">
                         Close
                     </button>
                 </div>

@@ -1,0 +1,97 @@
+:root {
+  --theme-font-sans: 'Manrope', sans-serif;
+  --theme-font-mono: 'Cascadia Code', Consolas, monospace;
+  --theme-label-font: 'Arial Narrow', Arial, sans-serif;
+
+  --theme-brand-0: 237 246 241;
+  --theme-brand-1: 220 236 227;
+  --theme-brand-2: 190 220 204;
+  --theme-brand-3: 154 199 174;
+  --theme-brand-4: 109 170 140;
+  --theme-brand-5: 65 138 109;
+  --theme-brand-6: 23 107 88;
+  --theme-brand-7: 20 87 70;
+  --theme-brand-8: 16 69 54;
+  --theme-brand-9: 11 50 40;
+
+  --theme-neutral-0: 255 255 255;
+  --theme-neutral-1: 250 250 250;
+  --theme-neutral-2: 229 229 229;
+  --theme-neutral-3: 212 212 212;
+  --theme-neutral-4: 163 163 163;
+  --theme-neutral-5: 115 115 115;
+  --theme-neutral-6: 82 82 82;
+  --theme-neutral-7: 64 64 64;
+  --theme-neutral-8: 38 38 38;
+  --theme-neutral-9: 17 17 17;
+
+  --theme-surface: 255 255 255;
+  --theme-page: 255 255 255;
+  --theme-header: 255 255 255;
+  --theme-text: 17 17 17;
+  --theme-muted: 82 82 82;
+  --theme-border: 229 229 229;
+  --theme-quiet-surface: 250 250 250;
+  --theme-canvas: 240 240 240;
+  --theme-ink: 0 0 0;
+  --theme-success-0: 237 246 241;
+  --theme-success-1: 220 236 227;
+  --theme-success-2: 190 220 204;
+  --theme-success-3: 154 199 174;
+  --theme-success-4: 109 170 140;
+  --theme-success-5: 65 138 109;
+  --theme-success-6: 23 107 88;
+  --theme-success-7: 20 87 70;
+  --theme-success-8: 16 69 54;
+  --theme-success-9: 11 50 40;
+
+  --theme-danger-0: 254 242 242;
+  --theme-danger-1: 254 226 226;
+  --theme-danger-2: 254 202 202;
+  --theme-danger-3: 252 165 165;
+  --theme-danger-4: 248 113 113;
+  --theme-danger-5: 239 68 68;
+  --theme-danger-6: 220 38 38;
+  --theme-danger-7: 185 28 28;
+  --theme-danger-8: 153 27 27;
+  --theme-danger-9: 127 29 29;
+
+  --theme-warning-0: 255 247 237;
+  --theme-warning-1: 255 237 213;
+  --theme-warning-2: 254 215 170;
+  --theme-warning-3: 253 186 116;
+  --theme-warning-4: 251 146 60;
+  --theme-warning-5: 249 115 22;
+  --theme-warning-6: 234 88 12;
+  --theme-warning-7: 194 65 12;
+  --theme-warning-8: 154 52 18;
+  --theme-warning-9: 124 45 18;
+
+  --theme-accent-0: 247 254 231;
+  --theme-accent-1: 236 252 203;
+  --theme-accent-2: 217 249 157;
+  --theme-accent-3: 190 242 100;
+  --theme-accent-4: 163 230 53;
+  --theme-accent-5: 132 204 22;
+  --theme-accent-6: 101 163 13;
+  --theme-accent-7: 77 124 15;
+  --theme-accent-8: 63 98 18;
+  --theme-accent-9: 54 83 20;
+
+  --theme-shadow-panel: 0 16px 38px rgb(23 60 52 / 12%);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --theme-page: 0 0 0;
+  --theme-header: 12 12 12;
+  --theme-text: 245 245 245;
+  --theme-muted: 163 163 163;
+  --theme-border: 51 51 51;
+  --theme-quiet-surface: 18 18 18;
+  --theme-surface: 12 12 12;
+  --theme-canvas: 0 0 0;
+  --theme-ink: 0 0 0;
+  --theme-shadow-panel: 0 16px 38px rgb(0 0 0 / 42%);
+}

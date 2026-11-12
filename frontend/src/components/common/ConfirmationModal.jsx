@@ -1,11 +1,11 @@
 import React from 'react';
 
-export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirm', confirmColor = 'blue' }) {
+export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirm', confirmColor = 'brand' }) {
     if (!isOpen) return null;
 
     const colorClasses = {
         red: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
-        blue: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
+        brand: 'bg-brand-600 hover:bg-brand-700 focus:ring-brand-500',
         green: 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
     };
 
@@ -31,7 +31,7 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, m
                     </button>
                     <button
                         type="button"
-                        className={`px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${colorClasses[confirmColor] || colorClasses.blue}`}
+                        className={`px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${colorClasses[confirmColor] || colorClasses.brand}`}
                         onClick={() => {
                             onConfirm();
                             onClose();

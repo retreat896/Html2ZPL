@@ -1,7 +1,28 @@
 import React from 'react';
 import LabelObject from '../../classes/LabelObject';
 import { useProject } from '../../context/ProjectContext';
-import { TEXT_PADDING_W, TEXT_PADDING_H, DISPLAY_DPI } from '../../constants/editor';
+import { ZPL_FONT_0_CAP_HEIGHT } from '../../constants/editor';
+
+const labelFontTransforms = new Map();
+// Font 0 strokes match the bold face of the condensed preview font.
+const LABEL_FONT_WEIGHT = 700;
+
+// Maps the HTML font's cap top and baseline onto Font 0's within a line-height: 1 box.
+const getLabelFontTransform = () => {
+    const fontFamily = getComputedStyle(document.documentElement).getPropertyValue('--theme-label-font').trim() || 'sans-serif';
+    if (labelFontTransforms.has(fontFamily)) return labelFontTransforms.get(fontFamily);
+
+    const context = document.createElement('canvas').getContext('2d');
+    context.font = `${LABEL_FONT_WEIGHT} 100px ${fontFamily}`;
+    const metrics = context.measureText('H');
+    const capHeight = metrics.actualBoundingBoxAscent / 100;
+    const baseline = ((100 - metrics.fontBoundingBoxAscent - metrics.fontBoundingBoxDescent) / 2 + metrics.fontBoundingBoxAscent) / 100;
+    const scaleY = capHeight > 0 ? ZPL_FONT_0_CAP_HEIGHT / capHeight : 1;
+    const transform = { scaleY, offsetEm: -(baseline - capHeight) * scaleY };
+
+    labelFontTransforms.set(fontFamily, transform);
+    return transform;
+};
 
 // --- Logic ---
 export class TextObject extends LabelObject {
@@ -13,6 +34,10 @@ export class TextObject extends LabelObject {
         this.orientation = props.orientation || 'N'; // N, R, I, B
         this.width = props.width || 0;
         this.height = props.height || 0;
+    }
+
+    static fromDrag({ rect }) {
+        return { x: rect.x, y: rect.y, fontSize: Math.max(5, Math.round(rect.height)) };
     }
 
     toZPL(index, templateValues = {}) {
@@ -59,39 +84,21 @@ export class TextObject extends LabelObject {
         const { dx, dy } = delta;
         const { snapToGrid, gridSize, confineToLabel, bleed, labelDim } = settings;
 
-        let newProps = {};
-        let scaleFactor = 1;
-
-        const PAD_W = 0;
-        const PAD_H = 0;
-
-        // Calculate content dimensions (without padding)
-        const contentWidth = Math.max(1, initialProps.domWidth - PAD_W);
-        const contentHeight = Math.max(1, initialProps.domHeight - PAD_H);
-
-        // Calculate scale factor based on handle movement and orientation
+        const newProps = {};
         const isVertical = this.orientation === 'R' || this.orientation === 'B';
-        const dimension = isVertical ? initialProps.domWidth : initialProps.domHeight;
         const deltaChange = isVertical ? dx : dy;
+        const fontSizeDelta = handle === 'br' ? deltaChange : -deltaChange;
+        const baseFontSize = Math.max(1, initialProps.fontSize);
+        const contentWidth = Math.max(1, initialProps.domWidth);
+        const contentHeight = Math.max(1, initialProps.domHeight);
 
-        if (handle === 'br') {
-            scaleFactor = (dimension + deltaChange) / dimension;
-        } else if (handle === 'tl') {
-            scaleFactor = (dimension - deltaChange) / dimension;
-        }
-
-        // Calculate proposed font size
-        let newFontSize = Math.max(5, initialProps.fontSize * scaleFactor);
-        newFontSize = Math.round(newFontSize);
+        let newFontSize = Math.max(5, Math.round(initialProps.fontSize + fontSizeDelta));
 
         // Check confinement
         if (confineToLabel) {
             const getDims = (fs) => {
-                const ratio = fs / initialProps.fontSize;
-                return {
-                    w: contentWidth * ratio + PAD_W,
-                    h: contentHeight * ratio + PAD_H,
-                };
+                const ratio = fs / baseFontSize;
+                return { w: contentWidth * ratio, h: contentHeight * ratio };
             };
 
             let { w: newWidth, h: newHeight } = getDims(newFontSize);
@@ -103,16 +110,16 @@ export class TextObject extends LabelObject {
                 // Check Width
                 if (initialProps.x + newWidth > maxX) {
                     const maxW = maxX - initialProps.x;
-                    const maxRatio = Math.max(0, maxW - PAD_W) / contentWidth;
-                    newFontSize = Math.floor(initialProps.fontSize * maxRatio);
+                    const maxRatio = Math.max(0, maxW) / contentWidth;
+                    newFontSize = Math.floor(baseFontSize * maxRatio);
                     ({ w: newWidth, h: newHeight } = getDims(newFontSize));
                 }
 
                 // Check Height
                 if (initialProps.y + newHeight > maxY) {
                     const maxH = maxY - initialProps.y;
-                    const maxRatio = Math.max(0, maxH - PAD_H) / contentHeight;
-                    newFontSize = Math.min(newFontSize, Math.floor(initialProps.fontSize * maxRatio));
+                    const maxRatio = Math.max(0, maxH) / contentHeight;
+                    newFontSize = Math.min(newFontSize, Math.floor(baseFontSize * maxRatio));
                 }
             } else if (handle === 'tl') {
                 const minX = -bleed;
@@ -127,8 +134,8 @@ export class TextObject extends LabelObject {
                 // Check Left
                 if (newX < minX) {
                     const maxW = brX - minX;
-                    const maxRatio = Math.max(0, maxW - PAD_W) / contentWidth;
-                    newFontSize = Math.floor(initialProps.fontSize * maxRatio);
+                    const maxRatio = Math.max(0, maxW) / contentWidth;
+                    newFontSize = Math.floor(baseFontSize * maxRatio);
                     ({ w: newWidth, h: newHeight } = getDims(newFontSize));
                     newX = brX - newWidth;
                     newY = brY - newHeight;
@@ -137,8 +144,8 @@ export class TextObject extends LabelObject {
                 // Check Top
                 if (newY < minY) {
                     const maxH = brY - minY;
-                    const maxRatio = Math.max(0, maxH - PAD_H) / contentHeight;
-                    newFontSize = Math.min(newFontSize, Math.floor(initialProps.fontSize * maxRatio));
+                    const maxRatio = Math.max(0, maxH) / contentHeight;
+                    newFontSize = Math.min(newFontSize, Math.floor(baseFontSize * maxRatio));
                     ({ w: newWidth, h: newHeight } = getDims(newFontSize));
                     newX = brX - newWidth;
                     newY = brY - newHeight;
@@ -149,9 +156,9 @@ export class TextObject extends LabelObject {
             }
         } else {
             if (handle === 'tl') {
-                const ratio = newFontSize / initialProps.fontSize;
-                const newWidth = contentWidth * ratio + PAD_W;
-                const newHeight = contentHeight * ratio + PAD_H;
+                const ratio = newFontSize / baseFontSize;
+                const newWidth = contentWidth * ratio;
+                const newHeight = contentHeight * ratio;
 
                 const brX = initialProps.x + initialProps.domWidth;
                 const brY = initialProps.y + initialProps.domHeight;
@@ -244,8 +251,10 @@ export const TextComponent = ({ object }) => {
         }
     }
 
+    const { scaleY, offsetEm } = getLabelFontTransform();
+
     return (
-        <span className="text-black whitespace-nowrap select-none inline-block leading-none" style={{ fontSize: `${object.fontSize}px` }}>
+        <span className="text-black whitespace-nowrap select-none inline-block leading-none align-top" style={{ fontFamily: 'var(--theme-label-font)', fontWeight: LABEL_FONT_WEIGHT, fontSize: `${object.fontSize}px`, letterSpacing: 'var(--zpl-letter-spacing, 0em)', marginRight: 'calc(-1 * var(--zpl-letter-spacing, 0em))', transform: `translateY(${offsetEm}em) scaleY(${scaleY})`, transformOrigin: 'top left' }}>
             {displayText}
         </span>
     );

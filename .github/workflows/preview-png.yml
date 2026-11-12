@@ -1,0 +1,46 @@
+name: Build Preview PNG
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Start preview and capture PNG
+        working-directory: frontend
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/html2zpl-preview.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173 > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173 > /dev/null
+          npm run preview:screenshot
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-png
+          path: frontend/public/HomePagePreview.png
+          if-no-files-found: error

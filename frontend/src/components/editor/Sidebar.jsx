@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
 import clsx from 'clsx';
+import { ActionIcon, Stack, Tooltip } from '@mantine/core';
+import { IconPlus, IconTag } from '@tabler/icons-react';
 import { useProject } from '../../context/ProjectContext';
 
-import { useNavigate } from 'react-router-dom';
+const densityWidths = {
+    compact: '13rem',
+    normal: '16rem',
+    spacious: '18rem',
+};
 
-export default function Sidebar({ isOpen, toggleSidebar }) {
-    const navigate = useNavigate();
-    const { project, activeLabelId, setActiveLabelId, addLabel, deleteLabel, renameLabel, currentView, setCurrentView, updateProjectMeta } = useProject();
+export default function Sidebar({ isOpen, toggleSidebar, density }) {
+    const { project, activeLabelId, setActiveLabelId, addLabel, deleteLabel, renameLabel, updateProjectMeta } = useProject();
     const [isLabelsOpen, setIsLabelsOpen] = useState(true);
+    const expandedWidth = densityWidths[density] || densityWidths.normal;
+    const collapsedRail = !isOpen;
 
     // Project Rename State
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -32,26 +39,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             setIsEditingTitle(false);
         }
     };
-
-    // ... (skip down to NavItem definition)
-
-    function NavItem({ icon, label, active, isOpen, onClick }) {
-        return (
-            <a
-                href="#"
-                onClick={(e) => {
-                    e.preventDefault();
-                    if (onClick) onClick();
-                }}
-                className={clsx(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors',
-                    active ? 'bg-blue-50 dark:bg-blue-600/30 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white',
-                )}>
-                <i className={clsx('fa-solid text-xl transition-transform', icon)}></i>
-                <span className={clsx('transition-all whitespace-nowrap', !isOpen && 'lg:opacity-0 lg:hidden')}>{label}</span>
-            </a>
-        );
-    }
 
     // Renaming State
     const [editingLabelId, setEditingLabelId] = useState(null);
@@ -83,7 +70,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             {/* Mobile Overlay */}
             <div id="sidebar-overlay" className={clsx('fixed inset-0 bg-black/50 z-20 lg:hidden transition-opacity', isOpen ? 'opacity-100' : 'opacity-0 hidden')} onClick={toggleSidebar}></div>
 
-            <aside id="sidebar" className={clsx('fixed lg:relative top-0 left-0 h-full bg-white dark:bg-gray-800 shadow-lg z-30 flex flex-col transition-all duration-300 ease-in-out', isOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:translate-x-0 lg:w-20')}>
+            <aside id="sidebar" data-open={isOpen} style={{ width: isOpen ? expandedWidth : undefined }} className={clsx('fixed lg:relative top-0 left-0 h-full bg-white dark:bg-gray-800 shadow-lg z-30 flex flex-col shrink-0 transition-all duration-300 ease-in-out', isOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:translate-x-0 lg:w-20')}>
                 {/* Sidebar Header */}
                 <div id="sidebar-header" className="transition-all flex items-center justify-between h-16 md:p-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
                     <div className="flex items-center gap-1 overflow-hidden">
@@ -96,17 +83,17 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                                     onBlur={saveTitle}
                                     onKeyDown={handleTitleKeyDown}
                                     autoFocus
-                                    className="text-lg font-semibold text-gray-800 dark:text-white bg-transparent border-b border-blue-500 focus:outline-none w-32 ml-2"
+                                    className="text-lg font-semibold text-gray-800 dark:text-white bg-transparent border-b border-brand-500 focus:outline-none w-32 ml-2"
                                 />
                             ) : (
-                                <span className="text-lg font-semibold text-gray-800 dark:text-white transition-colors cursor-pointer hover:text-blue-600 ml-2" onDoubleClick={startEditingTitle} title="Double-click to rename project">
+                                <span className="editor-project-title text-lg font-semibold text-gray-800 dark:text-white transition-colors cursor-pointer hover:text-brand-600 ml-2" onDoubleClick={startEditingTitle} title="Double-click to rename project">
                                     {project.metadata?.name || 'Untitled'}
                                 </span>
                             )}
                         </div>
                     </div>
                     {/* Left panel collapse toggle (visible on large screens) */}
-                    <button onClick={toggleSidebar} className="hidden lg:inline-flex p-3 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <button onClick={toggleSidebar} aria-label={isOpen ? 'Collapse labels sidebar' : 'Expand labels sidebar'} aria-expanded={isOpen} className="hidden lg:inline-flex p-3 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <i className={clsx('fa-solid', isOpen ? 'fa-chevron-left' : 'fa-chevron-right')}></i>
                     </button>
                     {/* Mobile Close Button */}
@@ -117,6 +104,29 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
                 {/* Navigation */}
                 <nav id="leftNav" className="flex-1 overflow-y-auto p-4 space-y-2">
+                    {!isOpen && (
+                        <Stack align="center" gap={collapsedRail ? 4 : 'xs'} mt={collapsedRail ? 4 : 'xs'}>
+                            {project.labels?.map((label) => (
+                                <Tooltip key={label.id} label={label.name} position="right" withArrow>
+                                    <ActionIcon
+                                        size={collapsedRail ? 36 : undefined}
+                                        variant={activeLabelId === label.id ? 'light' : 'subtle'}
+                                        color={activeLabelId === label.id ? 'brand' : 'gray'}
+                                        aria-label={`Select ${label.name}`}
+                                        aria-pressed={activeLabelId === label.id}
+                                        onClick={() => setActiveLabelId(label.id)}>
+                                        <IconTag size={collapsedRail ? 24 : 18} stroke={1.8} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            ))}
+                            <Tooltip label="New label" position="right" withArrow>
+                                <ActionIcon size={collapsedRail ? 36 : undefined} variant="light" color="brand" aria-label="Create new label" onClick={addLabel}>
+                                    <IconPlus size={collapsedRail ? 24 : 18} stroke={1.8} />
+                                </ActionIcon>
+                            </Tooltip>
+                        </Stack>
+                    )}
+
                     {/* Labels Section */}
                     <div className="space-y-1 mb-4">
                         <div
@@ -134,7 +144,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                                             key={label.id}
                                             className={clsx(
                                                 'group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm transition-all duration-200',
-                                                activeLabelId === label.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
+                                                activeLabelId === label.id ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
                                             )}
                                             onClick={() => setActiveLabelId(label.id)}>
                                             <div className="flex items-center gap-2 overflow-hidden flex-1">
@@ -148,7 +158,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                                                         onKeyDown={handleLabelKeyDown}
                                                         autoFocus
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="w-full bg-white dark:bg-gray-700 border border-blue-500 rounded px-1 py-0.5 text-xs focus:outline-none"
+                                                        className="w-full bg-white dark:bg-gray-700 border border-brand-500 rounded px-1 py-0.5 text-xs focus:outline-none"
                                                     />
                                                 ) : (
                                                     <span className="truncate select-none" onDoubleClick={(e) => startEditingLabel(e, label)} title="Double-click to rename">
@@ -170,7 +180,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
                                     <button
                                         onClick={addLabel}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all duration-200">
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all duration-200">
                                         <i className="fa-solid fa-plus"></i>
                                         <span>New Label</span>
                                     </button>
@@ -181,23 +191,5 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 </nav>
             </aside>
         </>
-    );
-}
-
-function NavItem({ icon, label, active, isOpen, onClick }) {
-    return (
-        <a
-            href="#"
-            onClick={(e) => {
-                e.preventDefault();
-                if (onClick) onClick();
-            }}
-            className={clsx(
-                'flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors',
-                active ? 'bg-blue-50 dark:bg-blue-600/30 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white',
-            )}>
-            <i className={clsx('fa-solid text-xl transition-transform', icon)}></i>
-            <span className={clsx('transition-all whitespace-nowrap', !isOpen && 'lg:opacity-0 lg:hidden')}>{label}</span>
-        </a>
     );
 }

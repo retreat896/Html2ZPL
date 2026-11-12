@@ -89,7 +89,7 @@ export default function RightSidebar({ isOpen, setIsOpen }) {
                                         onClick={() => interactionMode !== 'design' && toggleInteractionMode()}
                                         className={clsx(
                                             'px-3 py-1 rounded text-xs font-medium transition-all',
-                                            interactionMode === 'design' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
+                                            interactionMode === 'design' ? 'bg-white dark:bg-gray-600 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
                                         )}>
                                         Design
                                     </button>

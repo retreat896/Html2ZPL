@@ -35,7 +35,7 @@ export default function RenameModal({ isOpen, onClose, onConfirm, title = "Name 
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
                                 placeholder="Enter project name"
                                 autoFocus
                                 required
@@ -51,7 +51,7 @@ export default function RenameModal({ isOpen, onClose, onConfirm, title = "Name 
                             </button>
                             <button
                                 type="submit"
-                                className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5">
+                                className="px-6 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-lg shadow-brand-500/30 transition-all transform hover:-translate-y-0.5">
                                 {confirmText}
                             </button>
                         </div>

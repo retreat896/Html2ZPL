@@ -31,7 +31,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onCreate }) {
                             type="text" 
                             value={name} 
                             onChange={(e) => setName(e.target.value)} 
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             required
                         />
                     </div>
@@ -41,7 +41,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onCreate }) {
                         <textarea 
                             value={description} 
                             onChange={(e) => setDescription(e.target.value)} 
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             rows="3"
                         />
                     </div>
@@ -56,7 +56,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onCreate }) {
                         </button>
                         <button 
                             type="submit" 
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors"
+                            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg shadow-sm transition-colors"
                         >
                             Create Template
                         </button>

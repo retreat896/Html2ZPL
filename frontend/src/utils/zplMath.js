@@ -49,7 +49,7 @@ export const getZplCoordinates = (object, labelSettings) => {
 
     // Properties to convert
     // Rounding is an index (0-8), not a dimension, so we exclude it.
-    const propsToConvert = ['x', 'y', 'width', 'height', 'thickness', 'fontSize'];
+    const propsToConvert = ['x', 'y', 'width', 'height', 'thickness', 'fontSize', 'barHeight', 'lineWidth', 'lineHeight'];
 
     propsToConvert.forEach(prop => {
         if (typeof convertedObj[prop] === 'number') {
@@ -87,7 +87,7 @@ export const getEditorCoordinates = (object, labelSettings) => {
     const { dpmm, unit } = labelSettings;
     const convertedObj = { ...object };
 
-    const propsToConvert = ['x', 'y', 'width', 'height', 'thickness', 'fontSize'];
+    const propsToConvert = ['x', 'y', 'width', 'height', 'thickness', 'fontSize', 'barHeight', 'lineWidth', 'lineHeight'];
 
     propsToConvert.forEach(prop => {
         if (typeof convertedObj[prop] === 'number') {

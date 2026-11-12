@@ -65,7 +65,7 @@ export default function LoginModal({ isOpen, onClose }) {
                             required
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             placeholder="Enter your username"
                         />
                     </div>
@@ -77,12 +77,12 @@ export default function LoginModal({ isOpen, onClose }) {
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             placeholder="Enter your password"
                         />
                     </div>
 
-                    <button type="submit" disabled={loading} className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    <button type="submit" disabled={loading} className="w-full py-2 px-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         {loading ? 'Processing...' : isLogin ? 'Login' : 'Sign Up'}
                     </button>
                 </form>
@@ -94,7 +94,7 @@ export default function LoginModal({ isOpen, onClose }) {
                             setIsLogin(!isLogin);
                             setError('');
                         }}
-                        className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                        className="text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300 font-medium">
                         {isLogin ? 'Sign up' : 'Login'}
                     </button>
                 </div>

@@ -1,6 +1,6 @@
 # ZPL GUI Editor V2 ![Status: Development](https://img.shields.io/badge/Status-Development-yellow?style=flat&logo=visualstudiocode&logoColor=white)
 
-![Webpage Screenshot](./public/Screenshot.png)
+![HTML2ZPL editor preview with an imported shipping label](./frontend/public/HomePagePreview.png)
 
 ![Repo Last Commit](https://img.shields.io/github/last-commit/retreat896/Html2ZPL?style=flat&logo=git&logoColor=white&color=0007d4)
 ![GitHub contributors](https://img.shields.io/github/contributors/retreat896/Html2ZPL?style=flat&color=blue)
@@ -11,6 +11,7 @@
 ## Built with:
 ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
+![Mantine](https://img.shields.io/badge/Mantine-339AF0?style=flat&logo=mantine&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
 ![Font Awesome](https://img.shields.io/badge/Font%20Awesome-f7df1e?style=flat&logo=fontawesome&logoColor=black)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26.svg?style=flat&logo=HTML5&logoColor=white)
@@ -45,8 +46,9 @@
 
 ## Overview
 
-ZPL GUI Editor V2 is a **work-in-progress web editor** for Zebra Programming Language (ZPL) labels. The goal is to emulate a "photo editor" experience for ZPL, allowing users to **design, preview, and export labels** visually.
-At the moment, this project is still under **active development** and **WILL** contain bugs or incomplete features.
+HTML2ZPL is an open-source, work-in-progress visual editor for Zebra Programming Language (ZPL) labels. I created it to make designing a label feel more like arranging the printed result than writing printer commands by hand. It brings the canvas, printer preview, label settings, and ZPL export into one browser-based workspace.
+
+The project is under active development and may contain bugs or incomplete features.
 
 ---
 
@@ -81,16 +83,17 @@ See [Live Demo](https://html2zpl.vercel.app/) for the current working example of
 
 ### Import & Export
 ![Implemented](https://img.shields.io/badge/Status-Implemented-blue?style=flat)  
-- Import ZPL files (parse & render) **(Not Implemented)**
-- Export labels to ZPL (Preview implemented) **(Implemented)**
+- Import ZPL files (parse & render) **(Implemented)**
+- Export labels to ZPL: copy or download from the ZPL preview **(Implemented)**
 - Support multiple file formats **(Not Implemented)** 
 
 ### ZPL Elements
 ![Status: Implemented](https://img.shields.io/badge/Status-Implemented-blue?style=flat)  
 - **Text**: render & edit text fields **(Implemented)**  
 - **Graphics**: render & edit shapes **(Implemented)**
+- **Lines**: horizontal, vertical & diagonal lines **(Implemented)**
 - **Images**: render uploaded images **(Implemented)**
-- **Barcodes**: render and handle input **(Not Implemented)**
+- **Barcodes**: Code 128, Code 39, QR Code, and Data Matrix **(Implemented)**
 - **Options**: configure ZPL element attributes **(Implemented)**
 
 ### Saving & Loading
@@ -116,7 +119,7 @@ See [Live Demo](https://html2zpl.vercel.app/) for the current working example of
 
 Before getting started with Html2ZPL, ensure your runtime environment meets the following requirements:
 
--   **Server Software:** Node 21+
+-   **Server Software:** Node.js 22 LTS or 24 LTS (required by the local SQLite native module)
 
 ### Installation
 
@@ -129,23 +132,25 @@ Before getting started with Html2ZPL, ensure your runtime environment meets the 
 
 2. **Install dependencies:**
 
-   Navigate to the project directory and run:
+   Install the application, local API, and frontend packages:
 
    ```sh
    npm install
+   npm install --prefix backend
+   npm install --prefix frontend
    ```
 
 ### Usage
 
 **Development Server:**
 
-To start the development server with hot-reload:
+To start the local API and frontend together with hot reload:
 
 ```sh
 npm run dev
 ```
 
-The terminal will show a local URL (typically `http://localhost:5173`). Open this URL in your browser to start using the editor.
+The frontend is available at `http://localhost:5173`; the local API runs alongside it.
 
 **Building for Production:**
 
@@ -155,11 +160,28 @@ To create an optimized production build:
 npm run build
 ```
 
-The built files will be in the `dist` directory. You can preview the production build locally using:
+The built files will be in `frontend/dist`. You can preview the production build locally using:
 
 ```sh
-npm run preview
+npm run preview --prefix frontend
 ```
+
+## Self-hosting
+
+The repository includes a local React frontend and a Node.js API backed by SQLite. Use Node.js 22 or 24, then install and start the services from the repository root:
+
+```sh
+npm install
+npm install --prefix backend
+npm install --prefix frontend
+npm run dev
+```
+
+Before using the local API, copy `backend/example.env` to `backend/.env` and replace `SECRET_KEY` with a unique, private value. Local SQLite data is stored in `backend/users.db`. The local API is intended for development; do not expose it directly to the public internet as-is. The alternative Cloudflare Worker implementation is in [`worker/server.js`](worker/server.js) and its D1 adapter is in [`worker/dbd1.js`](worker/dbd1.js).
+
+### Preview PNG
+
+The `Build Preview PNG` GitHub Actions workflow builds the frontend on every push, imports a sample ZPL shipping label into the editor in Chromium, and uploads `HomePagePreview.png` as the `preview-png` workflow artifact. To refresh the README and homepage image locally, build the frontend, start `npm run preview --prefix frontend`, then run `npm run preview:screenshot --prefix frontend`. The script writes `frontend/public/HomePagePreview.png` by default.
 
 ---
 
@@ -174,8 +196,12 @@ npm run preview
 -   [x] **`Database Integration`**: Implement a database to allow users to save and load their labels.  
 -   [x] **`UI Overhaul`**: Implement a flat modern style GUI for the application.
 -   [ ] **`Advanced API Integration`**: Add more complex features to the API like user login, OAuth, and more.
--   [x] **`Advanced Saving`**: Implement a project manager to allow saving multiple label sets, sharing, and storage options.
--   [ ] **`Advanced Items`**: Implements advanced items such as Images and possibly custom user items.
+-   [x] **`Advanced Saving`**: Implement a project manager to allow saving multiple label sets and storage options.
+-   [x] **`Advanced Items`**: Images, lines (including diagonals), and barcodes (Code 128, Code 39, QR Code, Data Matrix).
+-   [x] **`Editor Workflow`**: Per-object printer-accurate previews, drag-to-create with grid snapping, and copy/download from the ZPL preview.
+-   [ ] **`Custom Items`**: Allow users to build and reuse their own label items.
+-   [ ] **`Project Sharing`**: Share projects by link with public/private access (temporarily removed from the editor).
+-   [ ] **`Multi-user Editing`**: Let multiple users edit the same project at the same time with live updates.
 -   [ ] **`Final UI Design`**: Implement the final UI design for the application.
 
 ---

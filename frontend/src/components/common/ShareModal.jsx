@@ -83,7 +83,7 @@ export default function ShareModal({ isOpen, onClose }) {
                                 onClick={handleToggle}
                                 disabled={loading}
                                 className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                    isPublic ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                                    isPublic ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-600'
                                 }`}
                             >
                                 <span className="sr-only">Use setting</span>

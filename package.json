@@ -4,14 +4,16 @@
     "private": true,
     "scripts": {
         "deploy": "wrangler deploy",
-        "dev": "node start-dev.js",
+        "dev": "concurrently --kill-others --names backend,frontend --prefix-colors green,cyan \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+        "build": "npm run build --prefix frontend",
         "start": "wrangler dev",
         "test": "vitest"
     },
     "devDependencies": {
-        "@cloudflare/vitest-pool-workers": "^0.8.19",
-        "vitest": "~3.2.0",
-        "wrangler": "^4.59.2"
+        "@cloudflare/vitest-plugin": "^1.6.0",
+        "concurrently": "^9.2.1",
+        "vitest": "^4.1.12",
+        "wrangler": "^4.158.0"
     },
     "dependencies": {
         "bcryptjs": "^3.0.3",

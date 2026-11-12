@@ -1,6 +1,7 @@
 import { getEditorCoordinates } from './zplMath';
 import { TextObject } from '../registry/items/Text';
 import { BarcodeObject } from '../registry/items/Barcode';
+import { LineObject } from '../registry/items/Line';
 // import GraphicObject from '../classes/items/GraphicObject'; // Not implemented yet
 
 export const parseZPL = (zplString, labelSettings) => {
@@ -89,73 +90,77 @@ export const parseZPL = (zplString, labelSettings) => {
 
                 const foParams = getCommandParams(segment, '^FO');
                 const fdMatch = segment.match(/\^FD(.*?)\^FS/);
+                // [command, type, index of height param, index of interpretation-line param]
+                const symbology = [
+                    ['^BC', 'code128', 1, 2],
+                    ['^B3', 'code39', 2, 3],
+                    ['^BQ', 'qrcode'],
+                    ['^BX', 'datamatrix'],
+                ].find(([cmd]) => segment.includes(cmd));
 
-                if (foParams && fdMatch) {
-                    const x = parseInt(foParams[0], 10);
-                    const y = parseInt(foParams[1], 10);
-                    const data = fdMatch[1];
+                if (foParams && fdMatch && symbology) {
+                    const [cmd, barcodeType, heightIndex, textIndex] = symbology;
+                    const params = getCommandParams(segment, cmd) || [];
+                    const byParams = getCommandParams(segment, '^BY');
+                    let moduleWidth = parseInt(byParams?.[0], 10) || 2;
+                    let data = fdMatch[1];
 
-                    // Check for ^BC (Code128) or ^BQ (QR)
-                    if (segment.includes('^BC')) {
-                        const bcParams = getCommandParams(segment, '^BC');
-                        // ^BCo,h,f,g,e,m
-                        const bcHeight = bcParams ? parseInt(bcParams[1], 10) : 100;
-
-                        const zplObj = {
-                            id,
-                            type: 'barcode',
-                            x,
-                            y,
-                            width,
-                            height: bcHeight, // Use explicit height from command if available, or fallback
-                            barcodeType: 'code128',
-                            data
-                        };
-
-                        // If we have explicit W/H from comment, use those as they represent the bounding box
-                        if (width > 0) zplObj.width = width;
-                        if (height > 0) zplObj.height = height;
-
-                        const editorObj = getEditorCoordinates(zplObj, labelSettings);
-                        editorObj.data = data;
-                        editorObj.barcodeType = 'code128';
-                        editorObj.id = id;
-
-                        objects.push({ obj: editorObj, z: parseInt(z, 10) });
-
-                    } else if (segment.includes('^BQ')) {
-                        // ^BQN,2,w
-                        const bqParams = getCommandParams(segment, '^BQ');
-                        const modWidth = bqParams ? parseInt(bqParams[2], 10) : 2;
-
-                        let cleanData = data;
-                        if (cleanData.startsWith('QA,')) {
-                            cleanData = cleanData.substring(3);
-                        }
-
-                        const zplObj = {
-                            id,
-                            type: 'barcode',
-                            x,
-                            y,
-                            width: modWidth, // This is module width, not total width
-                            height: 0,
-                            barcodeType: 'qrcode',
-                            data: cleanData
-                        };
-
-                        // Use comment dimensions for bounding box
-                        if (width > 0) zplObj.width = width;
-                        if (height > 0) zplObj.height = height;
-
-                        const editorObj = getEditorCoordinates(zplObj, labelSettings);
-                        editorObj.data = cleanData;
-                        editorObj.barcodeType = 'qrcode';
-                        editorObj.id = id;
-
-                        objects.push({ obj: editorObj, z: parseInt(z, 10) });
+                    if (barcodeType === 'qrcode') {
+                        moduleWidth = parseInt(params[2], 10) || 2;
+                        data = data.replace(/^[A-Z]{2},/, '');
+                    } else if (barcodeType === 'datamatrix') {
+                        moduleWidth = parseInt(params[1], 10) || 2;
                     }
+
+                    const zplObj = {
+                        id,
+                        type: 'barcode',
+                        x: parseInt(foParams[0], 10),
+                        y: parseInt(foParams[1], 10),
+                        width,
+                        height,
+                        barHeight: heightIndex !== undefined ? parseInt(params[heightIndex], 10) || 60 : undefined,
+                    };
+
+                    const editorObj = getEditorCoordinates(zplObj, labelSettings);
+                    Object.assign(editorObj, {
+                        id,
+                        data,
+                        barcodeType,
+                        moduleWidth,
+                        showText: textIndex === undefined || params[textIndex] !== 'N',
+                    });
+
+                    objects.push({ obj: editorObj, z });
                 }
+            }
+        } else if (segment.startsWith('Line Object ID:')) {
+            const idMatch = segment.match(/ID:\s*([a-zA-Z0-9-]+)/);
+            const zMatch = segment.match(/Z:\s*(\d+)/);
+            const foParams = getCommandParams(segment, '^FO');
+            const gbParams = getCommandParams(segment, '^GB');
+            const gdParams = getCommandParams(segment, '^GD');
+
+            if (idMatch && foParams && (gbParams || gdParams)) {
+                const params = gdParams || gbParams;
+                const boxWidth = parseInt(params[0], 10) || 1;
+                const boxHeight = parseInt(params[1], 10) || 1;
+                const thickness = parseInt(params[2], 10) || Math.min(boxWidth, boxHeight);
+                const horizontal = boxWidth >= boxHeight;
+
+                const editorObj = getEditorCoordinates({
+                    id: idMatch[1],
+                    type: 'line',
+                    x: parseInt(foParams[0], 10),
+                    y: parseInt(foParams[1], 10),
+                    lineWidth: gdParams || horizontal ? boxWidth : 0,
+                    lineHeight: gdParams || !horizontal ? boxHeight : 0,
+                    thickness,
+                }, labelSettings);
+                editorObj.slope = gdParams?.[4] === 'R' ? 'up' : 'down';
+                editorObj.color = params[3] || 'B';
+
+                objects.push({ obj: editorObj, z: zMatch ? parseInt(zMatch[1], 10) : 0 });
             }
         }
     });
@@ -171,6 +176,10 @@ export const parseZPL = (zplString, labelSettings) => {
             return instance;
         } else if (item.obj.type === 'barcode') {
             const instance = new BarcodeObject(item.obj);
+            Object.assign(instance, item.obj);
+            return instance;
+        } else if (item.obj.type === 'line') {
+            const instance = new LineObject(item.obj);
             Object.assign(instance, item.obj);
             return instance;
         }

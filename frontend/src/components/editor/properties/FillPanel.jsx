@@ -42,7 +42,7 @@ export default function FillPanel() {
                             value={value}
                             onChange={(e) => handleChange(obj.id, e.target.value)}
                             placeholder={obj.previewText || `Enter ${obj.type}...`}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-shadow"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-shadow"
                         />
                         {obj.finalInput && <p className="text-[10px] text-gray-400 truncate">Pattern: {obj.finalInput}</p>}
                     </div>

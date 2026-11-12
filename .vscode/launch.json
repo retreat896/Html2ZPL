@@ -5,7 +5,8 @@
             "type": "node",
             "request": "launch",
             "name": "Dev",
-            "program": "${workspaceFolder}/start-dev.js",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         }

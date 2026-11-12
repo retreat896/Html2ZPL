@@ -66,7 +66,7 @@ export default function PropertiesRenderer({ object, onChange, schema }) {
                             type="checkbox"
                             checked={!!object[name]}
                             onChange={(e) => onChange(name, e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200">{label}</span>
                     </label>

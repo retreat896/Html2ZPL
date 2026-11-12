@@ -31,7 +31,7 @@ export const ToastProvider = ({ children }) => {
                         className={`pointer-events-auto min-w-[300px] p-4 rounded-lg shadow-lg transform transition-all animate-slide-up flex items-center justify-between
                         ${toast.type === 'success' ? 'bg-green-500 text-white' : ''}
                         ${toast.type === 'error' ? 'bg-red-500 text-white' : ''}
-                        ${toast.type === 'info' ? 'bg-blue-500 text-white' : ''}
+                        ${toast.type === 'info' ? 'bg-brand-500 text-white' : ''}
                         ${toast.type === 'warning' ? 'bg-yellow-500 text-white' : ''}
                         `}
                     >

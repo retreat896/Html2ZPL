@@ -1,15 +1,20 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useLocation } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 
 const MetaTags = () => {
     const { activeLabel } = useProject();
+    const { pathname } = useLocation();
+    const isHomePage = pathname === '/';
 
-    const baseTitle = 'ZPL Label Editor';
-    const baseDescription = 'Create, edit, and preview ZPL labels locally with this powerful web-based editor. Support for barcodes, images, and more.';
+    const baseTitle = isHomePage ? 'HTML2ZPL - Visual Zebra Label Editor' : 'ZPL Label Editor';
+    const baseDescription = isHomePage
+        ? 'An open-source browser workspace for designing, previewing, and exporting labels for Zebra printers.'
+        : 'Create, edit, and preview ZPL labels locally with this web-based editor. Support for barcodes, images, and more.';
     
     // Dynamic content based on active label
-    const title = activeLabel?.name 
+    const title = !isHomePage && activeLabel?.name
         ? `${activeLabel.name} - ${baseTitle}`
         : baseTitle;
     

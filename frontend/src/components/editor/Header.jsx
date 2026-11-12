@@ -1,16 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { ActionIcon, Menu, SegmentedControl, Text } from '@mantine/core';
+import { Link } from 'react-router-dom';
+import { IconAdjustmentsHorizontal } from '@tabler/icons-react';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import LoginModal from '../common/LoginModal';
-import ShareModal from '../common/ShareModal';
 
-export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
-    const { project, setIsPreviewOpen, updateProjectMeta, saveProject, loadProject, saveStatus } = useProject();
+export default function Header({ toggleLeftSidebar, density, setDensity }) {
+    const { project, setIsPreviewOpen, loadProject, saveStatus } = useProject();
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const mobileMenuRef = useRef(null);
 
@@ -42,21 +41,58 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
 
                     <Link to="/" className="p-1 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                            <img className="shrink-0 cursor-pointer" src="/favicon.svg" alt="Logo" title="Back to Dashboard" />
+                            <img className="shrink-0 cursor-pointer" src="/favicon.svg" alt="Logo" title="Back to Home" />
                         </div>
-                        <span className="text-xl font-bold text-brand-gradient inline-block">Html2ZPL</span>
+                        <span className="text-xl font-bold text-brand inline-block">Html2ZPL</span>
                     </Link>
                 </div>
 
                 {/* Right Side: Actions + User */}
                 <div id="rightPanel" className="flex items-center gap-4">
+                    <div className="hidden xl:block">
+                        <SegmentedControl
+                            size="xs"
+                            value={density}
+                            onChange={setDensity}
+                            data={[
+                                { label: 'Compact', value: 'compact' },
+                                { label: 'Normal', value: 'normal' },
+                                { label: 'Spacious', value: 'spacious' },
+                            ]}
+                            aria-label="Editor density"
+                        />
+                    </div>
 
+                    <div className="hidden lg:block xl:hidden">
+                        <Menu position="bottom-end" withinPortal>
+                            <Menu.Target>
+                                <ActionIcon variant="default" aria-label="Editor density settings">
+                                    <IconAdjustmentsHorizontal size={17} />
+                                </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                                <Menu.Label>Editor density</Menu.Label>
+                                <SegmentedControl
+                                    fullWidth
+                                    size="xs"
+                                    value={density}
+                                    onChange={setDensity}
+                                    data={[
+                                        { label: 'Compact', value: 'compact' },
+                                        { label: 'Normal', value: 'normal' },
+                                        { label: 'Spacious', value: 'spacious' },
+                                    ]}
+                                    aria-label="Editor density"
+                                />
+                            </Menu.Dropdown>
+                        </Menu>
+                    </div>
                     {/* Save Status Indicator */}
                     {user && project && project.id && (
                         <div className="mr-2 text-xs font-medium flex items-center gap-1.5 min-w-[80px] justify-end">
                             {saveStatus === 'saving' && (
                                 <>
-                                    <i className="fa-solid fa-circle-notch fa-spin text-blue-500"></i>
+                                    <i className="fa-solid fa-circle-notch fa-spin text-brand-500"></i>
                                     <span className="text-gray-500 dark:text-gray-400">Saving...</span>
                                 </>
                             )}
@@ -89,19 +125,11 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                             Preview ZPL
                         </button>
 
-                        <button
-                            onClick={saveProject}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
-                            title="Save Project to ZPL File">
-                            <i className="fa-solid fa-download"></i>
-                            Download ZPL
-                        </button>
-
                         <label
                             className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-                            title="Open Project from ZPL File">
+                            title="Import a ZPL File">
                             <i className="fa-solid fa-upload"></i>
-                            Open
+                            Import
                             <input
                                 type="file"
                                 accept=".zpl,.txt"
@@ -120,22 +148,6 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                             />
                         </label>
 
-                        <Link
-                            to="/"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-900/50 rounded-lg text-sm font-medium transition-colors">
-                            <i className="fa-solid fa-house"></i>
-                            Dashboard
-                        </Link>
-
-                        <button onClick={() => setIsShareModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                <polyline points="15 3 21 3 21 9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                            </svg>
-                            Share
-                        </button>
-
                         {/* ... (User Session Logic) ... */}
                         {user ? (
                             <div className="flex items-center gap-3">
@@ -145,7 +157,7 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                                 </button>
                             </div>
                         ) : (
-                            <button onClick={() => setIsLoginModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700">
+                            <button onClick={() => setIsLoginModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-brand-700">
                                 Login
                             </button>
                         )}
@@ -159,6 +171,21 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                         {/* Mobile Dropdown */}
                         {isMobileMenuOpen && (
                             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
+                                <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                                    <Text size="xs" fw={600} mb={6}>Editor density</Text>
+                                    <SegmentedControl
+                                        fullWidth
+                                        size="xs"
+                                        value={density}
+                                        onChange={setDensity}
+                                        data={[
+                                            { label: 'Compact', value: 'compact' },
+                                            { label: 'Normal', value: 'normal' },
+                                            { label: 'Spacious', value: 'spacious' },
+                                        ]}
+                                        aria-label="Editor density"
+                                    />
+                                </div>
                                 <button
                                     onClick={() => {
                                         handlePreview();
@@ -171,18 +198,9 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                                     </svg>
                                     Preview ZPL
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        saveProject();
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-                                    <i className="fa-solid fa-download w-4 text-center"></i>
-                                    Download ZPL
-                                </button>
                                 <label className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 cursor-pointer">
                                     <i className="fa-solid fa-upload w-4 text-center"></i>
-                                    Open
+                                    Import
                                     <input
                                         type="file"
                                         accept=".zpl,.txt"
@@ -202,31 +220,7 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                                     />
                                 </label>
 
-                                <button
-                                    onClick={() => {
-                                        setIsShareModalOpen(true);
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                        <polyline points="15 3 21 3 21 9"></polyline>
-                                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                                    </svg>
-                                    Share
-                                </button>
-
                                 <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-
-                                <button
-                                    onClick={() => {
-                                        navigate('/');
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-                                    <i className="fa-solid fa-house w-4 text-center"></i>
-                                    Dashboard
-                                </button>
 
                                 {user ? (
                                     <>
@@ -247,7 +241,7 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
                                             setIsLoginModalOpen(true);
                                             setIsMobileMenuOpen(false);
                                         }}
-                                        className="w-full text-left px-4 py-2 text-sm text-blue-600 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                                        className="w-full text-left px-4 py-2 text-sm text-brand-600 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                         <i className="fa-solid fa-right-to-bracket w-4 text-center"></i>
                                         Login
                                     </button>
@@ -270,7 +264,6 @@ export default function Header({ toggleLeftSidebar, toggleRightSidebar }) {
             </header>
 
             <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
-            <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} />
         </>
     );
 }

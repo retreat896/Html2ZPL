@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { AppShell } from '@mantine/core';
+import { useLocalStorage } from '@mantine/hooks';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -18,6 +20,7 @@ export default function EditorLayout() {
     const { project, setProject, setActiveLabelId, loadFromCloud, rehydrateProject, setInteractionMode, saveToCloud } = useProject();
     const { addToast } = useToast();
     const isLoadingRef = useRef(false);
+    const [density, setDensity] = useLocalStorage({ key: 'html2zpl_editor_density', defaultValue: 'normal' });
 
     // Handle responsive behavior
     useEffect(() => {
@@ -164,23 +167,19 @@ export default function EditorLayout() {
     }, [projectId, location.state]);
 
     const toggleLeftSidebar = () => setIsLeftSidebarOpen(!isLeftSidebarOpen);
-    const toggleRightSidebar = () => setIsRightSidebarOpen(!isRightSidebarOpen);
-
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
-            <Header toggleLeftSidebar={toggleLeftSidebar} toggleRightSidebar={toggleRightSidebar} />
-
-            <div className="flex flex-1 overflow-hidden">
-                <Sidebar isOpen={isLeftSidebarOpen} toggleSidebar={toggleLeftSidebar} />
-
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <Editor />
+        <AppShell header={{ height: 64 }} padding={0} className="editor-shell">
+            <AppShell.Header>
+                <Header toggleLeftSidebar={toggleLeftSidebar} density={density} setDensity={setDensity} />
+            </AppShell.Header>
+            <AppShell.Main className="editor-main">
+                <div className="editor-workspace" data-density={density}>
+                    <Sidebar isOpen={isLeftSidebarOpen} toggleSidebar={toggleLeftSidebar} density={density} />
+                    <div className="editor-canvas-area"><Editor /></div>
+                    <RightSidebar isOpen={isRightSidebarOpen} setIsOpen={setIsRightSidebarOpen} />
                 </div>
-
-                <RightSidebar isOpen={isRightSidebarOpen} setIsOpen={setIsRightSidebarOpen} />
-            </div>
-
+            </AppShell.Main>
             <ZplPreviewModal />
-        </div>
+        </AppShell>
     );
 }

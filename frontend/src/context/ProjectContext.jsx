@@ -18,7 +18,6 @@ const DEFAULT_EDITOR_SETTINGS = {
     showGrid: true,
     snapToGrid: true,
     gridSize: 10,
-    showHtmlObjects: true,
 };
 
 export const ProjectProvider = ({ children }) => {
