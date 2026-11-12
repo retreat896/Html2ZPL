@@ -1,6 +1,6 @@
 # ZPL GUI Editor V2 ![Status: Development](https://img.shields.io/badge/Status-Development-yellow?style=flat&logo=visualstudiocode&logoColor=white)
 
-![HTML2ZPL editor preview with an imported shipping label](./frontend/public/HomePagePreview.png)
+![HTML2ZPL editor preview with an imported shipping label](https://raw.githubusercontent.com/retreat896/Html2ZPL/readme-assets/HomePagePreview.png)
 
 ![Repo Last Commit](https://img.shields.io/github/last-commit/retreat896/Html2ZPL?style=flat&logo=git&logoColor=white&color=0007d4)
 ![GitHub contributors](https://img.shields.io/github/contributors/retreat896/Html2ZPL?style=flat&color=blue)
@@ -183,7 +183,7 @@ When deploying the frontend to Cloudflare Pages, use `frontend` as the root dire
 
 ### Preview PNG
 
-The `Build Preview PNG` GitHub Actions workflow builds the frontend on every push, imports a sample ZPL shipping label into the editor in Chromium, and uploads `HomePagePreview.png` as the `preview-png` workflow artifact. To refresh the README and homepage image locally, build the frontend, start `npm run preview --prefix frontend`, then run `npm run preview:screenshot --prefix frontend`. The script writes `frontend/public/HomePagePreview.png` by default.
+The `Build Preview PNG` GitHub Actions workflow builds the frontend on every push, imports a sample ZPL shipping label into the editor in Chromium, and uploads `HomePagePreview.png` as the `preview-png` workflow artifact. On pushes to `main` it also force-pushes the image to the `readme-assets` branch, which is where this README's screenshot is loaded from. To refresh the homepage image locally, build the frontend, start `npm run preview --prefix frontend`, then run `npm run preview:screenshot --prefix frontend`. The script writes `frontend/public/HomePagePreview.png` by default.
 
 ---
 

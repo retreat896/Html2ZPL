@@ -2,6 +2,8 @@ name: Build Preview PNG
 
 on:
   push:
+    branches-ignore:
+      - readme-assets
   workflow_dispatch:
 
 permissions:
@@ -15,6 +17,8 @@ jobs:
   build-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: frontend
@@ -51,6 +55,23 @@ jobs:
           name: preview-png
           path: frontend/public/HomePagePreview.png
           if-no-files-found: error
+
+      # The README embeds the image from this branch, so main never gets bot commits.
+      - name: Publish preview to readme-assets branch
+        if: github.ref == 'refs/heads/main'
+        working-directory: ${{ runner.temp }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir readme-assets
+          cp "$GITHUB_WORKSPACE/frontend/public/HomePagePreview.png" readme-assets/
+          cd readme-assets
+          git init --quiet --initial-branch readme-assets
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add HomePagePreview.png
+          git commit --quiet --message "Update editor preview from ${GITHUB_SHA::7}"
+          git push --force --quiet "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" readme-assets
 
       - name: Upload failure diagnostics
         if: failure()

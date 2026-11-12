@@ -6,7 +6,7 @@
 - `backend/` contains the local Node.js/Express API and its SQLite database.
 - `worker/` contains the cloud API, implemented as a Hono Cloudflare Worker using D1.
 - The root `npm run dev` script starts the frontend and local Node backend together.
-- `.github/workflows/preview-png.yml` builds the frontend and uploads a dashboard preview PNG on push.
+- `.github/workflows/preview-png.yml` builds the frontend, uploads an editor preview PNG on push, and on `main` publishes it to the `readme-assets` branch that the README embeds.
 
 The local backend and cloud worker are two implementations of the same application API, not separate feature sets. Their storage and runtime APIs differ, but their behavior as seen by the frontend should match.
 
