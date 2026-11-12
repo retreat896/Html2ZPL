@@ -179,6 +179,8 @@ npm run dev
 
 Before using the local API, copy `backend/example.env` to `backend/.env` and replace `SECRET_KEY` with a unique, private value. Local SQLite data is stored in `backend/users.db`. The local API is intended for development; do not expose it directly to the public internet as-is. The alternative Cloudflare Worker implementation is in [`worker/server.js`](worker/server.js) and its D1 adapter is in [`worker/dbd1.js`](worker/dbd1.js).
 
+When deploying the frontend to Cloudflare Pages, use `frontend` as the root directory, `npm run build` as the build command, and `dist` as the output directory. The Node version is pinned to 22 by [`frontend/.nvmrc`](frontend/.nvmrc); Vite 8 does not build on Node 18.
+
 ### Preview PNG
 
 The `Build Preview PNG` GitHub Actions workflow builds the frontend on every push, imports a sample ZPL shipping label into the editor in Chromium, and uploads `HomePagePreview.png` as the `preview-png` workflow artifact. To refresh the README and homepage image locally, build the frontend, start `npm run preview --prefix frontend`, then run `npm run preview:screenshot --prefix frontend`. The script writes `frontend/public/HomePagePreview.png` by default.
