@@ -160,3 +160,6 @@ vite.config.ts.timestamp-*
 wrangler.jsonc
 
 .wrangler
+
+# Preview capture failure screenshots
+frontend/public/*-failure.png

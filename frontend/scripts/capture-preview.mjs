@@ -4,6 +4,8 @@ import { chromium } from 'playwright';
 
 const previewUrl = process.env.PREVIEW_URL || 'http://127.0.0.1:4173/editor/new';
 const outputPath = resolve(process.env.PREVIEW_OUTPUT || 'public/HomePagePreview.png');
+const failurePath = outputPath.replace(/\.png$/, '-failure.png');
+const expectedObjects = 9;
 const showcaseZpl = [
     '^XA',
     '^FX Text Object ID: Brand Z:0 W:620 H:48',
@@ -30,9 +32,10 @@ const showcaseZpl = [
 await mkdir(dirname(outputPath), { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
+let page;
 
 try {
-    const page = await browser.newPage({
+    page = await browser.newPage({
         viewport: { width: 1440, height: 1000 },
         deviceScaleFactor: 1,
         colorScheme: 'light',
@@ -42,22 +45,34 @@ try {
         localStorage.setItem('html2zpl_settings', JSON.stringify({ showHtmlObjects: false, showGrid: false }));
     });
     page.on('dialog', (dialog) => dialog.accept());
+    page.on('pageerror', (error) => console.error(`Page error: ${error.message}`));
     await page.goto(previewUrl, { waitUntil: 'networkidle', timeout: 60000 });
-    await page.locator('input[type="file"]').first().setInputFiles({
+    await page.locator('input[type="file"][accept*=".zpl"]').setInputFiles({
         name: 'northstar-shipping.zpl',
         mimeType: 'text/plain',
         buffer: Buffer.from(showcaseZpl),
     });
     await page.getByText('Imported Label', { exact: true }).waitFor({ state: 'visible', timeout: 30000 });
-    await page.waitForFunction(() => document.querySelectorAll('[data-object-id]').length >= 9, { timeout: 30000 });
+    await page.waitForFunction((count) => document.querySelectorAll('[data-object-id]').length >= count, expectedObjects, { timeout: 30000 });
     await page.locator('[data-object-id]').first().click();
-    await page.waitForFunction(() => {
-        const preview = document.querySelector('img[alt="ZPL Preview"]');
-        return preview && preview.complete && preview.naturalWidth > 0;
-    }, { timeout: 30000 });
+    // Each object is rendered by the ZPL engine separately; wait until all of them are shown.
+    await page.waitForFunction(
+        (count) => {
+            const ready = [...document.querySelectorAll('img.object-zpl-preview')].filter((img) => img.complete && img.naturalWidth > 0 && img.classList.contains('opacity-100'));
+            return ready.length >= count;
+        },
+        expectedObjects,
+        { timeout: 60000 },
+    );
     await page.waitForTimeout(800);
     await page.screenshot({ path: outputPath });
     console.log(`Preview PNG written to ${outputPath}`);
+} catch (error) {
+    if (page) {
+        await page.screenshot({ path: failurePath }).catch(() => {});
+        console.error(`Capture failed; page state saved to ${failurePath}`);
+    }
+    throw error;
 } finally {
     await browser.close();
 }
